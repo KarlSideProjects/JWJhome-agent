@@ -5,7 +5,7 @@
 ## 文件導覽
 
 - [電腦採集端安裝與維護](./deployment/installation.md)
-- [掌機顯示端與安裝](https://github.com/KarlSideProjects/mqtt-handheld-hardware-monitor#安裝入口)
+- [掌機顯示端與安裝](https://github.com/KarlSideProjects/JWJhome-handheld#安裝入口)
 - [Python 開發與驗證](./getting-started/development.md)
 - [PR 交付與來源安裝驗收](./agents/delivery.md)
 - [快速開始](./getting-started/quickstart.md)

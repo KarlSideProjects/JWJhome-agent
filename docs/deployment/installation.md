@@ -1,6 +1,6 @@
 # 電腦採集端安裝與維護
 
-[返回首頁](../../README.md) · [文件中心](../README.md) · [掌機顯示端安裝](https://github.com/KarlSideProjects/mqtt-handheld-hardware-monitor/blob/main/docs/installation.md)
+[返回首頁](../../README.md) · [文件中心](../README.md) · [掌機顯示端安裝](https://github.com/KarlSideProjects/JWJhome-handheld/blob/main/docs/installation.md)
 
 本文件說明 Windows／Linux／PVE 採集端的安裝、權限變更與維護。採集端透過 MQTT 傳送資料，掌機顯示端需使用同一個 broker 與相符的主題設定。
 
@@ -12,7 +12,7 @@
 在 Debian、Ubuntu、Raspberry Pi OS 或 Proxmox VE 的 Shell 執行下列命令；需要 `curl`，非 root 使用者需要 `sudo`。安裝器需要 Python 3.11 以上與 `flock`。一般 Linux 使用 Docker Compose v2，PVE 使用原生 systemd；已辨識的既有安裝會保留 `.env` 與 Docker 覆寫檔。未知目錄或有衝突的舊 PVE Docker 容器會停止安裝。一般 Linux 支援 x64 與 64 位元 ARM64，PVE 原生安裝支援 x64。
 
 ```bash
-(f=$(mktemp) && trap 'rm -f "$f"' EXIT && curl -fsSL 'https://raw.githubusercontent.com/KarlSideProjects/hwmonitor-mqtt/master/bootstrap-source.sh' -o "$f" && if [ "$(id -u)" = 0 ]; then bash "$f"; else sudo bash "$f"; fi)
+(f=$(mktemp) && trap 'rm -f "$f"' EXIT && curl -fsSL 'https://raw.githubusercontent.com/KarlSideProjects/JWJhome-agent/master/bootstrap-source.sh' -o "$f" && if [ "$(id -u)" = 0 ]; then bash "$f"; else sudo bash "$f"; fi)
 ```
 
 安裝器從公開主分支解析單一 commit，下載該 commit 的來源並檢查封存檔路徑。來源及安裝器都依賴 GitHub 與 HTTPS，沒有獨立簽章。下載或檢查失敗不會更新現有程式；啟動失敗時會嘗試回復先前的程式與服務。失敗時保留的備份可能包含私有資料，請勿公開。
@@ -82,7 +82,7 @@ ARM64 與 PVE 來源安裝仍需各自實機驗證。Windows 請使用 [Windows 
 在 64 位元「系統管理員」PowerShell 執行以下命令。首次執行會隱藏 MQTT 密碼輸入，並建立僅 Administrators 與 SYSTEM 可讀的 `.env`；已辨識的既有設定會保留。安裝器下載固定 commit 的 Python 來源，準備 Python、uv、LibreHardwareMonitor 與 PawnIO，註冊開機排程並啟動 sender。未知目錄會停止安裝。
 
 ```powershell
-& ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/KarlSideProjects/hwmonitor-mqtt/master/bootstrap-source.ps1' -ErrorAction Stop).Content))
+& ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/KarlSideProjects/JWJhome-agent/master/bootstrap-source.ps1' -ErrorAction Stop).Content))
 ```
 
 檢查排程狀態：
