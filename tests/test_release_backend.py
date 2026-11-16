@@ -110,15 +110,15 @@ def test_resume_and_monotonic_latest(service, tmp_path):
     assert state['releases'][0]['draft'] and state['latest'] is None
     release = prepare_candidate(api, two, tmp_path / 'two')
     state['fail_publish'] = True
-    with pytest.raises(ValueError): drain_ready(api)
-    drain_ready(api)
+    with pytest.raises(ValueError): drain_ready(api, two['source'])
+    drain_ready(api, two['source'])
     assert state['latest'] == release['id']
     prepare_candidate(api, one, tmp_path / 'one')
-    drain_ready(api)
+    drain_ready(api, one['source'])
     assert state['latest'] == release['id']
     writes = list(state['writes'])
     prepare_candidate(api, two, tmp_path / 'two')
-    drain_ready(api)
+    drain_ready(api, two['source'])
     assert state['writes'] == writes
     state['assets'][release['id']][0]['digest'] = 'sha256:' + '0' * 64
     with pytest.raises(ValueError): reconcile_latest(api)
@@ -129,7 +129,7 @@ def test_draft_ready_and_publication_preserve_intended_tag(service, tmp_path):
     receipt = make_candidate(tmp_path / 'candidate', 1)
     release = prepare_candidate(api, receipt, tmp_path / 'candidate')
     assert release['tag_name'] == 'v0.1.1'
-    drain_ready(api)
+    drain_ready(api, receipt['source'])
     assert state['releases'][0]['tag_name'] == 'v0.1.1'
     assert state['releases'][0]['draft'] is False
     assert state['latest'] == release['id']
@@ -148,7 +148,7 @@ def test_receipt_missing_corrupt_and_duplicates_rejected(service, tmp_path):
     receipt = make_candidate(tmp_path / 'three', 3)
     release = prepare_candidate(api, receipt, tmp_path / 'three')
     state['releases'].append(dict(release, id=999))
-    with pytest.raises(ValueError): drain_ready(api)
+    with pytest.raises(ValueError): drain_ready(api, receipt['source'])
 
 
 def test_distinct_preparation_and_source_serialized_retry(service, tmp_path):
@@ -165,8 +165,10 @@ def test_distinct_preparation_and_source_serialized_retry(service, tmp_path):
     with ThreadPoolExecutor(max_workers=2) as pool:
         list(pool.map(prepare, (1, 2)))
     assert len(state['releases']) == 2
-    drain_ready(api)
-    assert state['latest'] == state['releases'][1]['id']
+    writes = list(state['writes'])
+    with pytest.raises(ValueError, match='other READY'):
+        drain_ready(api, receipts[0]['source'])
+    assert state['writes'] == writes
 
 
 def test_starter_recovery_and_restart_after_publication(service, tmp_path):
@@ -182,7 +184,7 @@ def test_starter_recovery_and_restart_after_publication(service, tmp_path):
     # A crash after the publication PATCH but before latest reconciliation.
     release['draft'] = False
     assert state['latest'] is None
-    drain_ready(api)
+    drain_ready(api, receipt['source'])
     assert state['latest'] == release['id']
 
 
@@ -248,7 +250,7 @@ def test_exact_public_verification_is_read_only_and_resumable(service, tmp_path,
     directory = tmp_path / 'candidate'
     receipt = make_candidate(directory, 1)
     release = prepare_candidate(api, receipt, directory)
-    drain_ready(api)
+    drain_ready(api, receipt['source'])
     release = state['releases'][0]
     writes = list(state['writes'])
     base = 'https://github.com/KarlSideProjects/hwmonitor-mqtt-releases/releases'
@@ -314,13 +316,13 @@ def test_read_only_verification_rejects_latest_downgrade_and_unpublished(service
     first = make_candidate(tmp_path / 'first', 1)
     second = make_candidate(tmp_path / 'second', 2)
     one = prepare_candidate(api, first, tmp_path / 'first')
-    drain_ready(api)
+    drain_ready(api, first['source'])
     two = prepare_candidate(api, second, tmp_path / 'second')
     writes = list(state['writes'])
     with pytest.raises(ValueError, match='exact published'):
         verify_public(api, two['id'], second)
     assert state['writes'] == writes
-    drain_ready(api)
+    drain_ready(api, second['source'])
     state['latest'] = one['id']
     writes = list(state['writes'])
     with pytest.raises(ValueError, match='downgrade'):
@@ -347,3 +349,26 @@ def test_confirmed_source_publishes_single_ready_draft(service, tmp_path):
     prepare_candidate(api, receipt, tmp_path / 'one')
     drain_ready(api, receipt['source'])
     assert not state['releases'][0]['draft']
+
+
+@pytest.mark.parametrize('source', [None, '', 'a' * 39, 'g' * 40])
+def test_invalid_source_cannot_publish(service, tmp_path, source):
+    api, state = service
+    receipt = make_candidate(tmp_path / 'one', 1)
+    prepare_candidate(api, receipt, tmp_path / 'one')
+    writes = list(state['writes'])
+    with pytest.raises(ValueError):
+        drain_ready(api, source)
+    assert state['writes'] == writes
+    assert state['releases'][0]['draft']
+
+
+def test_source_argument_is_required(service, tmp_path):
+    api, state = service
+    receipt = make_candidate(tmp_path / 'one', 1)
+    prepare_candidate(api, receipt, tmp_path / 'one')
+    writes = list(state['writes'])
+    with pytest.raises(TypeError):
+        drain_ready(api)
+    assert state['writes'] == writes
+    assert state['releases'][0]['draft']

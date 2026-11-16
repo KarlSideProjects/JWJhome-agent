@@ -214,11 +214,13 @@ def reconcile_latest(api):
         raise ValueError('latest promotion not confirmed')
 
 
-def drain_ready(api, expected_source=None):
+def drain_ready(api, expected_source):
     """Caller serializes all drains globally; incomplete drafts remain recoverable."""
+    if not isinstance(expected_source, str) or not re.fullmatch(r'[0-9a-f]{40}', expected_source):
+        raise ValueError('invalid source')
     rows = releases(api)
     ready = sorted((parse(r)[2], r) for r in rows if r['draft'] and parse(r)[0] == 'READY')
-    if expected_source is not None and any(parse(release)[1]['source'] != expected_source for _, release in ready):
+    if any(parse(release)[1]['source'] != expected_source for _, release in ready):
         raise ValueError('other READY drafts require separate handling before publication')
     for _, release in ready:
         _, receipt, _ = parse(release)

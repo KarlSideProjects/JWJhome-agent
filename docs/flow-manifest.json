@@ -365,7 +365,7 @@
     {
       "path": "scripts/release_backend.py",
       "kind": "file",
-      "md5": "6b9c1e7af4f397770c43aa9351d30319"
+      "md5": "1bdb4de50dd0cee186742d5129f216fa"
     },
     {
       "path": "scripts/stage_release_draft.py",
@@ -670,7 +670,7 @@
     {
       "path": "tests/test_release_backend.py",
       "kind": "file",
-      "md5": "7caadf0b080fc27344715225f73d82b7"
+      "md5": "80f609f1ba02829f08d066559bb585af"
     },
     {
       "path": "tests/test_release_controller.py",
