@@ -780,12 +780,12 @@
     {
       "path": "scripts/native_install_smoke.py",
       "kind": "file",
-      "md5": "e78ec9ab4aead5976be6ccc09f841fd9"
+      "md5": "9aad28bc71e366024c924095d2001bc0"
     },
     {
       "path": "tests/test_native_install_smoke.py",
       "kind": "file",
-      "md5": "492a9089deccc54bee7a652b53b5ed2b"
+      "md5": "4903f020e003b4958ef9ca10c7e1695c"
     },
     {
       "path": "hwmonitor_mqtt/agents/agent_sender_windows.py",
@@ -810,7 +810,7 @@
     {
       "path": ".github/workflows/ci.yml",
       "kind": "file",
-      "md5": "6b9beb2fa8e4b16d062d8053576613d1"
+      "md5": "8c546d82cab7fc3db5dace0526315411"
     },
     {
       "path": "docs/release/sender-orchestration-wip.md",
@@ -3082,6 +3082,18 @@
         {
           "node": "B",
           "path": "tests/test_platform_detection.py"
+        },
+        {
+          "node": "N",
+          "path": "scripts/native_install_smoke.py"
+        },
+        {
+          "node": "N",
+          "path": "tests/test_native_install_smoke.py"
+        },
+        {
+          "node": "N",
+          "path": ".github/workflows/ci.yml"
         }
       ],
       "depends_on": [],
@@ -3289,6 +3301,62 @@
       "verdict": "pass",
       "findings": [],
       "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/f9700bbe19a90d99af356e23ba402b59593b1e1948a0261b74955141903f231e.json"
+    },
+    {
+      "feature": "development.delivery",
+      "fingerprint": "31e136af2eb0d8e3ce5d3401c680a6e8bedb0d0696b3256bd66dd721b77194ec",
+      "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/development.delivery/31e136af2eb0d8e3ce5d3401c680a6e8bedb0d0696b3256bd66dd721b77194ec.json"
+    },
+    {
+      "feature": "sender.build",
+      "fingerprint": "6a0a483df3797ec809e8b3d104035b965e4cac356bccd2f67b21c8a23c21d756",
+      "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.build/6a0a483df3797ec809e8b3d104035b965e4cac356bccd2f67b21c8a23c21d756.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "bf188198fe55f7defdb8780c66a674aec7a260dc2e1875644d9e37de2d752d93",
+      "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/bf188198fe55f7defdb8780c66a674aec7a260dc2e1875644d9e37de2d752d93.json"
+    },
+    {
+      "feature": "sender.pve-local",
+      "fingerprint": "99b2bfa9ec7d0afd8b1cfa5a03a6c124346f000a206ee1367d4c89006db42f6b",
+      "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.pve-local/99b2bfa9ec7d0afd8b1cfa5a03a6c124346f000a206ee1367d4c89006db42f6b.json"
+    },
+    {
+      "feature": "sender.release-orchestration",
+      "fingerprint": "0a689bea756b3a106309f8d8a767be0ed3d45221038429937f1c90ec8c44860b",
+      "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.release-orchestration/0a689bea756b3a106309f8d8a767be0ed3d45221038429937f1c90ec8c44860b.json"
+    },
+    {
+      "feature": "sender.smart-discovery",
+      "fingerprint": "36e392898d576eb50244eb55d87e435d898e88c658f95129aad5166103e3ab3a",
+      "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.smart-discovery/36e392898d576eb50244eb55d87e435d898e88c658f95129aad5166103e3ab3a.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "72765b584c28af2087a0451c1d2cf0b12c8ff21cf31db2b40c967a840c205e56",
+      "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/72765b584c28af2087a0451c1d2cf0b12c8ff21cf31db2b40c967a840c205e56.json"
     }
   ],
   "policy_inputs": [

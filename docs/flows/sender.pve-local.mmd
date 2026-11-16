@@ -12,6 +12,8 @@ flowchart TD
     K["Source upgrade backs up and restores prior units, runtime, snapshot and state on failure"]
     L["Tests cover trusted install paths, fixed command, collection, snapshot, sender and recovery"]
     M["Direct source installer rejects an existing runtime and directs source upgrade"]
+    N["Isolated systemd smoke uses trusted system Python and owned pvesh fixture; verify live snapshot, reader permissions and fresh MQTT; clean only owned resources"]
+    N --> B
     A --> B
     M --> A
     B -->|success| C

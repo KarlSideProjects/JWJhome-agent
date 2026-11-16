@@ -1,0 +1,12 @@
+{
+  "feature": "sender.release-orchestration",
+  "fingerprint": "0a689bea756b3a106309f8d8a767be0ed3d45221038429937f1c90ec8c44860b",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "影響沿 sender.build 傳遞，發布流程與條件未改；未執行發布。",
+    "本次僅覆核 b36e4de 後的 native smoke 變更；未變範圍沿用該提交獨立審查證據 docs/flow-evidence/reviews/sender.release-orchestration/501de880b5e6590bdd66a478acfe490317ff0f1124848630954e0dca94d53284.json，未宣稱重新審查所有產品原始碼。",
+    "native smoke 20 項測試通過；三項初審缺陷已核對失敗路徑與測試。真實 GitHub systemd、完整候選建置及發布未在本次驗證。"
+  ]
+}

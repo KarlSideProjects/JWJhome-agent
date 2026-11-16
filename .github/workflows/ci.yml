@@ -117,16 +117,14 @@ jobs:
         run: uv sync --locked --python "$(command -v python3)"
       - name: Verify systemd is available
         run: test -d /run/systemd/system
-      - name: Verify DynamicUser can reach Python 3.13 base executable
+      - name: Verify root-trusted system Python
         run: |
-          sudo env PATH="$PATH" UV_PYTHON="$(command -v python3)" "$(command -v uv)" run --locked python -c '
+          sudo /usr/bin/python3 -I -c '
           import pathlib, sys
-          base = pathlib.Path(sys._base_executable).resolve()
-          assert sys.version_info[:2] == (3, 13), sys.version
-          assert "/opt/hostedtoolcache/" in str(base), base
-          assert base.stat().st_mode & 0o005 == 0o005, base
-          assert all(parent.stat().st_mode & 0o001 for parent in base.parents if parent != pathlib.Path("/")), base
-          print(f"Python {sys.version.split()[0]} base executable is accessible to DynamicUser: {base}")
+          base = pathlib.Path("/usr/bin/python3").resolve(strict=True)
+          assert sys.version_info >= (3, 11), sys.version
+          assert all(p.stat().st_uid == 0 and not p.stat().st_mode & 0o022 for p in (base, *base.parents)), base
+          print(f"System Python {sys.version.split()[0]}: {base}")
           '
       - name: Install and observe isolated native sender
         run: sudo env PATH="$PATH" UV_PYTHON="$(command -v python3)" "$(command -v uv)" run --locked python scripts/native_install_smoke.py --run
