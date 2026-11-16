@@ -6,6 +6,12 @@
 
 電腦採集端 → MQTT broker → 掌機顯示端
 
+## 建置與發布政策
+
+保留現有原始碼開發及安裝。只有使用者明確要求才發起編譯或封裝，正式公開發布需另行明確批准。不得自行設定 Windows、Linux／PVE 或 ARM 設備每次推送自動部署。
+
+目前已發布的 master 推送工作流程尚未符合此政策，見 [#24](https://github.com/KarlSideProjects/JWJhome-agent/issues/24)。修正合併前，master 推送可能觸發編譯與發布。
+
 ## 安裝入口
 
 | 要安裝在哪裡 | 安裝 script | 安裝步驟 |

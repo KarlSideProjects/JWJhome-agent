@@ -2,28 +2,52 @@ name: Sender release WIP
 run-name: sender-recovery-${{ inputs.source || github.sha }}
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
     inputs:
       source:
         description: 'Exact first-parent master source to build or recover'
         required: false
         type: string
+      confirm_build:
+        description: 'Explicitly authorize compilation and packaging'
+        type: boolean
+        required: true
+        default: false
+      confirm_publish:
+        description: 'Separately authorize public release of the selected source'
+        type: boolean
+        required: true
+        default: false
       build_only:
         description: 'Build private artifacts without preparing or publishing a Public release (requires source)'
         required: false
         type: boolean
-        default: false
-  schedule:
-    - cron: '17 * * * *'
+        default: true
 
 permissions:
   contents: read
 
 jobs:
+  authorization:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require explicit authorization
+        env:
+          CONFIRM_BUILD: ${{ inputs.confirm_build }}
+          CONFIRM_PUBLISH: ${{ inputs.confirm_publish }}
+          BUILD_ONLY: ${{ inputs.build_only }}
+          SOURCE: ${{ inputs.source }}
+          REF: ${{ github.ref }}
+        run: |
+          test "$REF" = refs/heads/master || { echo 'Use master' >&2; exit 1; }
+          test -n "$SOURCE" || { echo 'Select an exact source' >&2; exit 1; }
+          test "$CONFIRM_BUILD" = true || { echo 'Explicit build confirmation required' >&2; exit 1; }
+          if [ "$BUILD_ONLY" != true ] && [ "$CONFIRM_PUBLISH" != true ]; then
+            echo 'Explicit public release confirmation required' >&2; exit 1
+          fi
+
   version:
-    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.source != ''))
+    needs: authorization
     runs-on: ubuntu-latest
     outputs:
       source: ${{ steps.identity.outputs.source }}
@@ -146,38 +170,9 @@ jobs:
           SENDER_RELEASE_TOKEN: ${{ secrets.SENDER_RELEASE_TOKEN }}
         run: python3 scripts/release_controller.py prepare --master "$MASTER" --source "$SOURCE" --assets "$RUNNER_TEMP/assets" --evidence "$RUNNER_TEMP/evidence"
 
-  recover:
-    if: github.ref == 'refs/heads/master' && github.event_name == 'schedule' && vars.SENDER_RELEASE_ACTIVATION_SHA != ''
-    runs-on: ubuntu-latest
-    environment: sender-release-publisher
-    permissions:
-      contents: read
-      actions: write
-    env:
-      START: ${{ vars.SENDER_RELEASE_ACTIVATION_SHA }}
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: master
-          path: recovery-master
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Retry a bounded set of missing sources
-        env:
-          SENDER_RELEASE_TOKEN: ${{ secrets.SENDER_RELEASE_TOKEN }}
-          SOURCE_WORKFLOW_TOKEN: ${{ github.token }}
-        run: |
-          MASTER=$(git -C recovery-master rev-parse HEAD)
-          python3 scripts/release_controller.py recover --repo recovery-master --master "$MASTER" --start "$START"
-
-  # A scheduled or manual drain can recover READY drafts after interrupted runs.
   publisher:
-    needs: prepare
-    if: ${{ always() && !(github.event_name == 'workflow_dispatch' && inputs.build_only) && github.ref == 'refs/heads/master' && (needs.prepare.result == 'success' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.source == '')) }}
+    needs: [version, prepare]
+    if: ${{ needs.prepare.result == 'success' && inputs.confirm_publish && !inputs.build_only }}
     runs-on: ubuntu-latest
     environment: sender-release-publisher
     concurrency:
@@ -190,4 +185,5 @@ jobs:
       - name: Reconcile validated READY drafts
         env:
           SENDER_RELEASE_TOKEN: ${{ secrets.SENDER_RELEASE_TOKEN }}
-        run: python3 scripts/release_controller.py drain
+          SOURCE: ${{ needs.version.outputs.source }}
+        run: python3 scripts/release_controller.py drain --source "$SOURCE"

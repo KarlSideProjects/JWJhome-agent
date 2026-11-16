@@ -326,3 +326,24 @@ def test_read_only_verification_rejects_latest_downgrade_and_unpublished(service
     with pytest.raises(ValueError, match='downgrade'):
         verify_public(api, two['id'], second)
     assert state['writes'] == writes
+
+
+def test_confirmed_source_rejects_other_ready_drafts_before_any_write(service, tmp_path):
+    api, state = service
+    one = make_candidate(tmp_path / 'one', 1)
+    two = make_candidate(tmp_path / 'two', 2)
+    prepare_candidate(api, one, tmp_path / 'one')
+    prepare_candidate(api, two, tmp_path / 'two')
+    writes = list(state['writes'])
+    with pytest.raises(ValueError, match='other READY'):
+        drain_ready(api, one['source'])
+    assert state['writes'] == writes
+    assert all(row['draft'] for row in state['releases'])
+
+
+def test_confirmed_source_publishes_single_ready_draft(service, tmp_path):
+    api, state = service
+    receipt = make_candidate(tmp_path / 'one', 1)
+    prepare_candidate(api, receipt, tmp_path / 'one')
+    drain_ready(api, receipt['source'])
+    assert not state['releases'][0]['draft']
