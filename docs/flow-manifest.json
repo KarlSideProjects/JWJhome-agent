@@ -190,7 +190,7 @@
     {
       "path": "README.md",
       "kind": "file",
-      "md5": "90836e5181285fa42ef5a44d0704b004"
+      "md5": "a8632d7da2f7f91dac34f6f7c6899903"
     },
     {
       "path": "LICENSE",
@@ -345,7 +345,7 @@
     {
       "path": ".github/workflows/sender-release.yml",
       "kind": "file",
-      "md5": "c6121fedb488d4f7deffb9434a431d7d"
+      "md5": "322c28ae78ce784445c15859d03e4c94"
     },
     {
       "path": "scripts/release_version.py",
@@ -355,7 +355,7 @@
     {
       "path": "scripts/release_controller.py",
       "kind": "file",
-      "md5": "486c6ce71d324189975614f317a2b416"
+      "md5": "fb9e9cbd2d47963b3cef75ad4f30a366"
     },
     {
       "path": "scripts/check_release_assets.py",
@@ -365,7 +365,7 @@
     {
       "path": "scripts/release_backend.py",
       "kind": "file",
-      "md5": "e41a1c2c3b388c521f695e3e09122b6f"
+      "md5": "1bdb4de50dd0cee186742d5129f216fa"
     },
     {
       "path": "scripts/stage_release_draft.py",
@@ -485,7 +485,7 @@
     {
       "path": "tests/test_release_workflow.py",
       "kind": "file",
-      "md5": "57b390c9152d60b5579bd99c76b69160"
+      "md5": "c77ec6a066740b5744a5aaa99ea063d4"
     },
     {
       "path": "tests/test_compiled_bootstrap_integration.py",
@@ -670,12 +670,12 @@
     {
       "path": "tests/test_release_backend.py",
       "kind": "file",
-      "md5": "c8f2a355309df9007d9c46f03505c3d7"
+      "md5": "80f609f1ba02829f08d066559bb585af"
     },
     {
       "path": "tests/test_release_controller.py",
       "kind": "file",
-      "md5": "8b00d4a83ab2def6c4ebb025481c2c63"
+      "md5": "60f42d7722b06aa489b03c8fafa43a2b"
     },
     {
       "path": "tests/test_install_sh.py",
@@ -805,7 +805,7 @@
     {
       "path": "docs/release/sender-orchestration-wip.md",
       "kind": "file",
-      "md5": "6c7eea727067fa60028b8389fb0c3283"
+      "md5": "9301bd54742a1f6253ad35cde5ce2992"
     },
     {
       "path": "bootstrap-source.sh",
@@ -2932,6 +2932,41 @@
       "reviewer": "independent Codex subagent /root/retro_review",
       "verdict": "pass",
       "evidence": "docs/flow-evidence/reviews/development.delivery/6afa27ac81086ec2cb7437de3e4798c5782ee148b3b01df7584f4c7633b92b27.json"
+    },
+    {
+      "feature": "sender.build",
+      "fingerprint": "ac83f0274eab04308ec16f9ef7252bf7b4a99e857701edfca73860ac7eef699d",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.build/ac83f0274eab04308ec16f9ef7252bf7b4a99e857701edfca73860ac7eef699d.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "9d83a1ae2df6e8f82093ee9b9731c926e0e36e7fa9b945a84f08ff94b1b84a04",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/9d83a1ae2df6e8f82093ee9b9731c926e0e36e7fa9b945a84f08ff94b1b84a04.json"
+    },
+    {
+      "feature": "sender.license",
+      "fingerprint": "faea47ca08e3f5f62ff9de43c0ce1301b8751da5f0be73118f661820d47a9f9f",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.license/faea47ca08e3f5f62ff9de43c0ce1301b8751da5f0be73118f661820d47a9f9f.json"
+    },
+    {
+      "feature": "sender.release-orchestration",
+      "fingerprint": "9614f4c27aa5c37892db57797f2f9f91ca3546a03673e22be614a7a57da346a0",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.release-orchestration/9614f4c27aa5c37892db57797f2f9f91ca3546a03673e22be614a7a57da346a0.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "a300e465d624255fb1a7a445a65bd3a9489b427ccb28435f4931b8cd7e08dcd8",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/a300e465d624255fb1a7a445a65bd3a9489b427ccb28435f4931b8cd7e08dcd8.json"
     }
   ],
   "policy_inputs": [

@@ -311,7 +311,7 @@ def test_drain_reports_post_publication_transport_failure_without_retrying_write
             raise URLError('injected anonymous transport outage')
     # Only anonymous requests fail; authenticated publication and reconciliation succeed.
     monkeypatch.setattr(backend, 'build_opener', lambda *handlers: real_opener(*handlers) if handlers else Unavailable())
-    monkeypatch.setattr(sys, 'argv', ['release_controller.py', 'drain'])
+    monkeypatch.setattr(sys, 'argv', ['release_controller.py', 'drain', '--source', receipt['source']])
     assert controller.main() == 1
     report = json.loads(capsys.readouterr().out)[0]
     assert report == {'state': 'published-but-verification-pending', 'release_id': release['id'], 'receipt': receipt}

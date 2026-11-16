@@ -154,7 +154,8 @@ def main():
     stage.add_argument('--source', required=True)
     stage.add_argument('--assets', type=Path, required=True)
     stage.add_argument('--evidence', type=Path, required=True)
-    sub.add_parser('drain')
+    drain = sub.add_parser('drain')
+    drain.add_argument('--source', required=True)
     verify = sub.add_parser('verify')
     verify.add_argument('--release-id', type=int, required=True)
     verify.add_argument('--receipt', type=Path, required=True)
@@ -183,7 +184,9 @@ def main():
             print(json.dumps(report, sort_keys=True))
             return 0 if report['state'] == 'verified' else 1
         elif args.command == 'drain':
-            published = drain_ready(api)
+            if not re.fullmatch(r'[0-9a-f]{40}', args.source):
+                raise ValueError('invalid source')
+            published = drain_ready(api, args.source)
             reports = [verify_public(api, row['id'], parse(row)[1]) for row in published]
             print(json.dumps(reports, sort_keys=True))
             return int(any(report['state'] != 'verified' for report in reports))
