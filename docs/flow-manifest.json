@@ -615,7 +615,7 @@
     {
       "path": "hwmonitor_mqtt/platforms/installers/pve.py",
       "kind": "file",
-      "md5": "bd949e3f399ce2170ab7a83e651f43c3"
+      "md5": "f14cd89f6355a0cd48336368c7dab552"
     },
     {
       "path": "tests/test_compiled_bootstrap.py",
@@ -780,12 +780,12 @@
     {
       "path": "scripts/native_install_smoke.py",
       "kind": "file",
-      "md5": "9aad28bc71e366024c924095d2001bc0"
+      "md5": "232170a9ac0fa0dc3870c0affea00bb5"
     },
     {
       "path": "tests/test_native_install_smoke.py",
       "kind": "file",
-      "md5": "4903f020e003b4958ef9ca10c7e1695c"
+      "md5": "201e33622346e0b01b4e277bd9fe2a0e"
     },
     {
       "path": "hwmonitor_mqtt/agents/agent_sender_windows.py",
@@ -820,7 +820,7 @@
     {
       "path": "bootstrap-source.sh",
       "kind": "file",
-      "md5": "bfb66a00a1c3df68b76538d1b237697d"
+      "md5": "37ff8c6aa3e9091ca74a9ad0a58fb4a6"
     },
     {
       "path": "bootstrap-source.ps1",
@@ -890,7 +890,7 @@
     {
       "path": "tests/test_source_bootstrap.py",
       "kind": "file",
-      "md5": "7e5d3190740f1a9c5e1532af54002216"
+      "md5": "d72ef6b208a3a12a10a123379fa85acc"
     },
     {
       "path": "tests/test_source_config.py",
@@ -1025,7 +1025,7 @@
     {
       "path": "hwmonitor_mqtt/platforms/pve_snapshot.py",
       "kind": "file",
-      "md5": "2e7afde21d49a7f3a441915e8cb39fbe"
+      "md5": "e331b73f394bd9bf64641138b91e6388"
     },
     {
       "path": "hwmonitor_mqtt/collectors/pve.py",
@@ -1045,12 +1045,12 @@
     {
       "path": "tests/test_pve_snapshot_writer.py",
       "kind": "file",
-      "md5": "e104c1e28fe6da6098861a702d2d6118"
+      "md5": "3ebba5058bf82475b9de64fdd9678df7"
     },
     {
       "path": "tests/test_pve_local_install.py",
       "kind": "file",
-      "md5": "4e57fbb76bc2fddd8e10036ea31ac0e3"
+      "md5": "3b242148e6afe9422dd931b734fb6f5b"
     },
     {
       "path": "tests/test_pve_local_bootstrap.py",

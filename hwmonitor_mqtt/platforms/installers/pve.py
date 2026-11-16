@@ -112,7 +112,7 @@ def snapshot_unit_text(python=f"{SERVICE_VENV}/bin/python"):
     return ("[Unit]\nDescription=Collect local PVE snapshot\n\n[Service]\nType=oneshot\n"
             "User=root\nGroup=" + READER_GROUP + "\nRuntimeDirectory=hwmonitor-mqtt-pve\n"
             "RuntimeDirectoryMode=0750\nRuntimeDirectoryPreserve=yes\nWorkingDirectory=" + _unit_escape(APP_ROOT)
-            + "\nExecStart=" + _unit_escape(python) + " -E -s -m hwmonitor_mqtt.platforms.pve_snapshot\n")
+            + "\nExecStart=!" + _unit_escape(python) + " -E -s -m hwmonitor_mqtt.platforms.pve_snapshot\n")
 
 
 def snapshot_timer_text():
@@ -179,18 +179,22 @@ def _activate_local(project_root, python, config_file, systemctl, run):
     timer_active, timer_enabled = state(SNAPSHOT_TIMER)
     sender_active, sender_enabled = state(SERVICE_NAME)
     sender_touched = timer_touched = False
+    phase = "unit preparation"
     try:
         if timer_active and run([systemctl, "stop", SNAPSHOT_TIMER], check=False).returncode:
             raise RuntimeError("cannot stop PVE snapshot timer")
         for name, content in units.items():
             (directory / name).write_text(content)
         for args in ([systemctl, "daemon-reload"], [systemctl, "start", SNAPSHOT_SERVICE]):
+            phase = "systemd reload" if args[1] == "daemon-reload" else "snapshot collection"
             if run(args, check=False).returncode:
                 raise RuntimeError("PVE snapshot startup failed")
+        phase = "snapshot verification"
         _verify_snapshot(config_file)
         for args in ([systemctl, "enable", "--now", SNAPSHOT_TIMER],
                      [systemctl, "enable", SERVICE_NAME], [systemctl, "restart", SERVICE_NAME],
                      [systemctl, "is-active", "--quiet", SERVICE_NAME]):
+            phase = "snapshot timer" if args[-1] == SNAPSHOT_TIMER else "sender activation"
             if args[-1] == SNAPSHOT_TIMER:
                 timer_touched = True
             if args[1] in ("enable", "restart") and args[-1] == SERVICE_NAME:
@@ -198,7 +202,9 @@ def _activate_local(project_root, python, config_file, systemctl, run):
             if run(args, check=False).returncode:
                 raise RuntimeError("PVE sender startup failed")
         return 0
-    except (OSError, RuntimeError, PveError, KeyError, ValueError):
+    except (OSError, RuntimeError, PveError, KeyError, ValueError) as error:
+        code = str(error) if isinstance(error, PveError) and str(error) in {"invalid_config", "invalid_snapshot", "collection_failed"} else "operation_failed"
+        print(f"PVE installation failed at {phase}: {code}", file=sys.stderr)
         checks = []
         for name, touched in ((SNAPSHOT_TIMER, timer_touched), (SERVICE_NAME, sender_touched)):
             if touched and previous[name] is None:

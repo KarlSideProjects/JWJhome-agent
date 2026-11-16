@@ -23,6 +23,8 @@ def _validate_directory(fd, *, final=False, gid=None):
 
 
 def _open_directory(gid):
+    if gid <= 0:
+        raise OSError("invalid snapshot reader group")
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
     fd = os.open('/', flags)
     try:
@@ -72,6 +74,8 @@ def main():
     argparse.ArgumentParser(description=__doc__).parse_args()
     if os.geteuid() != 0:
         raise SystemExit('root required')
+    if os.getegid() != 0:
+        raise SystemExit('root primary group required')
     gid = grp.getgrnam(_GROUP).gr_gid
     fd = _open_directory(gid)
     try:

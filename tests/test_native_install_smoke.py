@@ -110,10 +110,20 @@ def test_service_still_active_after_kill_preserves_runtime_and_unit(tmp_path):
     assert link.is_symlink()
 
 
+def fixture_id_program(tmp_path, uid, gid):
+    bindir = tmp_path / f'identity-{uid}-{gid}'
+    bindir.mkdir(exist_ok=True)
+    identity = bindir / 'id'
+    identity.write_text(f'#!/bin/sh\ncase "$1" in -u) echo {uid} ;; -g) echo {gid} ;; *) exit 1 ;; esac\n')
+    identity.chmod(0o755)
+    return identity
+
+
 def test_pvesh_fixture_accepts_only_fixed_requests(tmp_path):
     from scripts.native_install_smoke import pvesh_fixture
     fixture = tmp_path / 'pvesh'
-    fixture.write_text(pvesh_fixture('proof'))
+    identity = fixture_id_program(tmp_path, 0, 0)
+    fixture.write_text(pvesh_fixture('proof').replace('/usr/bin/id', str(identity)))
     fixture.chmod(0o755)
     node = subprocess.check_output(['hostname', '-s'], text=True).strip()
     base = [str(fixture), '--noproxy', 'get']
@@ -222,11 +232,13 @@ def test_static_snapshot_service_cleanup_does_not_disable(tmp_path):
 
 
 def test_fixture_drives_real_snapshot_collector(tmp_path):
-    from scripts.native_install_smoke import create_fixture
+    from scripts.native_install_smoke import pvesh_fixture
     from hwmonitor_mqtt.collectors.pve_local import collect_snapshot
     from hwmonitor_mqtt.collectors.smart import _pve_smart_to_json
     fixture = tmp_path / 'pvesh'
-    create_fixture(fixture, 'trial')
+    identity = fixture_id_program(tmp_path, 0, 0)
+    fixture.write_text(pvesh_fixture('trial').replace('/usr/bin/id', str(identity)))
+    fixture.chmod(0o755)
     def runner(args, timeout):
         return subprocess.check_output([str(fixture), *args[1:]], timeout=timeout)
     result = collect_snapshot(runner=runner)
@@ -356,3 +368,77 @@ def test_wrong_messages_cannot_extend_deadline():
     times = iter([0, 0.5, 1, 1.5, 2])
     with pytest.raises(TimeoutError):
         wait_for_fixture_metric(EndlessQueue(), 'token', 2, monotonic=lambda: next(times))
+
+
+def test_untrusted_smoke_parent_is_rejected_before_creating_files(tmp_path, monkeypatch):
+    import pytest
+    from scripts import native_install_smoke as smoke
+    monkeypatch.setattr(smoke, 'SMOKE_PARENT', tmp_path)
+    monkeypatch.setattr(smoke.tempfile, 'mkdtemp', lambda **kwargs: pytest.fail('unexpected file creation'))
+    with pytest.raises(RuntimeError, match='untrusted smoke parent'):
+        smoke.create_smoke_root()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_smoke_root_created_only_after_validating_parent(tmp_path, monkeypatch):
+    from scripts import native_install_smoke as smoke
+    calls = []
+    monkeypatch.setattr(smoke, 'SMOKE_PARENT', tmp_path)
+    monkeypatch.setattr(smoke.pve, '_validate_trusted_path', lambda path: calls.append(('validate', Path(path))))
+    def make(*, prefix, dir):
+        calls.append(('mkdir', Path(dir)))
+        path = Path(dir) / (prefix + 'fixture')
+        path.mkdir()
+        return str(path)
+    monkeypatch.setattr(smoke.tempfile, 'mkdtemp', make)
+    root = smoke.create_smoke_root()
+    assert calls == [('validate', tmp_path), ('mkdir', tmp_path)]
+    assert root.parent == tmp_path
+
+
+def test_fixture_source_copy_removes_group_write_without_following_symlinks(tmp_path):
+    import stat
+    from scripts.native_install_smoke import copy_fixture_source
+    source = tmp_path / 'checkout'
+    source.mkdir(mode=0o775)
+    source.chmod(0o775)
+    (source / 'module.py').write_text('fixture')
+    (source / 'module.py').chmod(0o664)
+    victim = tmp_path / 'victim'
+    victim.write_text('safe')
+    (source / 'link').symlink_to(victim)
+    target = tmp_path / 'private' / 'hwmonitor_mqtt'
+    copy_fixture_source(source, target)
+    assert stat.S_IMODE(target.stat().st_mode) == 0o755
+    assert stat.S_IMODE((target / 'module.py').stat().st_mode) == 0o644
+    assert (target / 'link').is_symlink()
+    assert victim.read_text() == 'safe'
+
+
+def test_cleanup_success_removes_only_owned_runtime(tmp_path):
+    runtime = tmp_path / 'owned'
+    runtime.mkdir()
+    sibling = tmp_path / 'other'
+    sibling.mkdir()
+    (sibling / 'keep').write_text('safe')
+    unit = tmp_path / 'missing.service'
+    link = tmp_path / 'missing-link'
+    result, error = cleanup_smoke_install('missing.service', unit, link, runtime)
+    assert result == 0 and error is None
+    assert not runtime.exists()
+    assert (sibling / 'keep').read_text() == 'safe'
+
+
+def test_pvesh_fixture_rejects_nonroot_uid_or_primary_gid(tmp_path):
+    from scripts.native_install_smoke import pvesh_fixture
+    fixture = tmp_path / 'pvesh'
+    command = [str(fixture), '--noproxy', 'get', '/cluster/resources', '--output-format', 'json', '--type', 'vm']
+    for uid, gid in ((1000, 0), (0, 1000), (1000, 1000), (0, 0)):
+        identity = fixture_id_program(tmp_path, uid, gid)
+        fixture.write_text(pvesh_fixture('proof').replace('/usr/bin/id', str(identity)))
+        fixture.chmod(0o755)
+        result = subprocess.run(command, capture_output=True)
+        if (uid, gid) == (0, 0):
+            assert result.returncode == 0 and b'smoke-proof' in result.stdout
+        else:
+            assert result.returncode != 0 and result.stdout == b''

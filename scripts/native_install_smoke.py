@@ -21,6 +21,7 @@ from threading import Event
 from queue import Queue, Empty
 
 REPO = Path(__file__).resolve().parents[1]
+SMOKE_PARENT = Path("/var/lib")
 sys.path.insert(0, str(REPO))
 
 from paho.mqtt import client as mqtt
@@ -32,6 +33,7 @@ def pvesh_fixture(token):
         raise ValueError("invalid fixture token")
     return f'''#!/bin/sh
 # hwmonitor-mqtt-smoke-{token}
+[ "$(/usr/bin/id -u)" = 0 ] && [ "$(/usr/bin/id -g)" = 0 ] || exit 1
 node=$(/bin/hostname -s) || exit 1
 case "$*" in
   "--noproxy get /cluster/resources --output-format json --type vm") printf '[{{"node":"%s","type":"qemu","vmid":987654,"name":"smoke-{token}","status":"running"}}]\\n' "$node" ;;
@@ -40,6 +42,28 @@ case "$*" in
   *) exit 1 ;;
 esac
 '''
+
+
+def create_smoke_root():
+    try:
+        pve._validate_trusted_path(SMOKE_PARENT)
+        info = SMOKE_PARENT.lstat()
+        if not stat.S_ISDIR(info.st_mode):
+            raise OSError("not a directory")
+    except (OSError, RuntimeError):
+        try:
+            info = SMOKE_PARENT.lstat()
+            details = f"uid={info.st_uid} mode={stat.S_IMODE(info.st_mode):04o}"
+        except OSError:
+            details = "unavailable"
+        raise RuntimeError(f"untrusted smoke parent {SMOKE_PARENT}: {details}") from None
+    return Path(tempfile.mkdtemp(prefix="hwmonitor-mqtt-smoke-", dir=SMOKE_PARENT))
+
+
+def copy_fixture_source(source, destination):
+    shutil.copytree(source, destination, symlinks=True,
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    pve._normalize_tree_permissions(destination)
 
 
 def create_fixture(path, token):
@@ -189,7 +213,7 @@ def main(argv=None):
     parser.add_argument("--timeout", type=int, default=90, help="seconds to wait for a real MQTT message")
     args = parser.parse_args(argv)
     if not args.run:
-        parser.error("native installation changes /opt and /etc/systemd/system; pass --run to confirm an isolated smoke run")
+        parser.error("native installation changes /var/lib and /etc/systemd/system; pass --run to confirm an isolated smoke run")
     if os.geteuid() != 0:
         parser.error("run this smoke check as root (for example, with sudo)")
     if args.timeout < 1:
@@ -233,7 +257,7 @@ def main(argv=None):
     broker = None
     old_installer_paths = (pve.INSTALL_ROOT, pve.APP_ROOT, pve.SERVICE_VENV, pve.SERVICE_NAME, pve.SYSTEMD_DIR, pve.SNAPSHOT_SERVICE, pve.SNAPSHOT_TIMER)
     try:
-        install_root = Path(tempfile.mkdtemp(prefix="hwmonitor-mqtt-smoke-", dir="/opt"))
+        install_root = create_smoke_root()
         fixture_digest = create_fixture(fixture_path, token)
         save_manifest()
         group_result = subprocess.run(["/usr/sbin/groupadd", "--system", pve.READER_GROUP], check=False)
@@ -246,8 +270,7 @@ def main(argv=None):
         config.write_text("")
         config.chmod(0o600)
         project_root = install_root / "project"
-        shutil.copytree(REPO / "hwmonitor_mqtt", project_root / "hwmonitor_mqtt",
-                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        copy_fixture_source(REPO / "hwmonitor_mqtt", project_root / "hwmonitor_mqtt")
         install_root.chmod(0o755)
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0))

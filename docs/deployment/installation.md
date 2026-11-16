@@ -17,9 +17,17 @@
 
 安裝器從公開主分支解析單一 commit，下載該 commit 的來源並檢查封存檔路徑。來源及安裝器都依賴 GitHub 與 HTTPS，沒有獨立簽章。下載或檢查失敗不會更新現有程式；啟動失敗時會嘗試回復先前的程式與服務。失敗時保留的備份可能包含私有資料，請勿公開。
 
+測試指定候選時，將下方 `COMMIT` 換成該候選完整的 40 位小寫 commit SHA；下載的 bootstrap 與它安裝的來源都會使用同一個 SHA。請在 root Shell 執行：
+
+```bash
+(COMMIT='<40 位小寫 commit SHA>'; f=$(mktemp) && trap 'rm -f "$f"' EXIT && curl -fsSL "https://raw.githubusercontent.com/KarlSideProjects/JWJhome-agent/$COMMIT/bootstrap-source.sh" -o "$f" && bash "$f" --commit "$COMMIT")
+```
+
+指定的 SHA 格式錯誤時，安裝器會在下載來源前停止。若要下載後直接以 `curl | bash` 執行，同樣必須將 SHA 同時放在網址和 `--commit` 參數中；下載失敗時使用暫存檔方式可避免執行不完整的腳本。
+
 PVE 安裝入口會先檢查舊的 `sys-agent` Docker 容器。容器存在時會停止，請先完成下方遷移，再執行安裝。它會更新下載目錄中的程式，保留既有 `.env` 與私有 PVE 設定。
 
-PVE 原生來源安裝會準備本機節點與 cluster ID。它以 root 排程執行固定的 `/usr/bin/pvesh` 讀取 VM、CT 與磁碟 SMART，將結果寫入受保護的本機快照，再由非 root sender 讀取並透過 MQTT 發送。本機路徑不需要 PVE API token 或 CA；既有 token、CA 與私有設定檔不會主動刪除。PVE Docker 與舊編譯版的 HTTPS API 路徑仍使用原有 token 與 CA 設定。
+PVE 原生來源安裝會準備本機節點與 cluster ID。它以 root 使用者及 root 主要群組排程執行固定的 `/usr/bin/pvesh` 讀取 VM、CT 與磁碟 SMART，將快照目錄及檔案交給專用唯讀群組，再由非 root sender 讀取並透過 MQTT 發送。本機路徑不需要 PVE API token 或 CA；既有 token、CA 與私有設定檔不會主動刪除。PVE Docker 與舊編譯版的 HTTPS API 路徑仍使用原有 token 與 CA 設定。
 
 ### 安裝檔會做什麼
 

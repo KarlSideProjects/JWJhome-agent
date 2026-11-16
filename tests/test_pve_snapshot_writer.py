@@ -72,12 +72,12 @@ def test_open_directory_rejects_symlink_component(tmp_path, monkeypatch):
     monkeypatch.setattr(pve_snapshot.os, 'open', redirected_open)
     monkeypatch.setattr(pve_snapshot, '_validate_directory', lambda *args, **kwargs: None)
     with pytest.raises(OSError):
-        pve_snapshot._open_directory(os.getgid())
+        pve_snapshot._open_directory(10)
 
 
 def test_directory_permission_checks(monkeypatch):
     from types import SimpleNamespace
-    for owner, mode, group in [(1, 0o750, 10), (0, 0o770, 10), (0, 0o755, 10), (0, 0o750, 11)]:
+    for owner, mode, group in [(1, 0o750, 10), (0, 0o770, 10), (0, 0o755, 10), (0, 0o750, 11), (0, 0o750, 0)]:
         monkeypatch.setattr(pve_snapshot.os, 'fstat', lambda fd: SimpleNamespace(
             st_uid=owner, st_gid=group, st_mode=stat.S_IFDIR | mode))
         with pytest.raises(OSError):
@@ -87,9 +87,52 @@ def test_directory_permission_checks(monkeypatch):
     pve_snapshot._validate_directory(42, final=True, gid=10)
 
 
+
+def test_open_directory_requires_existing_reader_group(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    root = tmp_path / 'run' / 'hwmonitor-mqtt-pve'
+    root.mkdir(parents=True, mode=0o750)
+    root.parent.chmod(0o755)
+    real_open, real_fstat = os.open, os.fstat
+    final_inode = root.stat().st_ino
+    group = [0]
+
+    def redirected_open(path, flags, *args, **kwargs):
+        return real_open(tmp_path if path == '/' else path, flags, *args, **kwargs)
+
+    def trusted_stat(fd):
+        info = real_fstat(fd)
+        return SimpleNamespace(st_uid=0, st_gid=group[0] if info.st_ino == final_inode else 0,
+                               st_mode=info.st_mode)
+
+    monkeypatch.setattr(pve_snapshot.os, 'open', redirected_open)
+    monkeypatch.setattr(pve_snapshot.os, 'fstat', trusted_stat)
+    monkeypatch.setattr(pve_snapshot.os, 'fchown', lambda *args: pytest.fail('directory must not be changed'))
+    with pytest.raises(OSError):
+        pve_snapshot._open_directory(10)
+    group[0] = 10
+    fd = pve_snapshot._open_directory(10)
+    os.close(fd)
+
 def test_cli_rejects_non_root(monkeypatch):
     import sys
     monkeypatch.setattr(sys, 'argv', ['pve_snapshot'])
     monkeypatch.setattr(pve_snapshot.os, 'geteuid', lambda: 1000)
     with pytest.raises(SystemExit, match='root required'):
         pve_snapshot.main()
+
+
+def test_cli_rejects_root_user_with_nonroot_primary_group(monkeypatch):
+    import sys
+    monkeypatch.setattr(sys, 'argv', ['pve_snapshot'])
+    monkeypatch.setattr(pve_snapshot.os, 'geteuid', lambda: 0)
+    monkeypatch.setattr(pve_snapshot.os, 'getegid', lambda: 1001)
+    monkeypatch.setattr(pve_snapshot.grp, 'getgrnam', lambda name: pytest.fail('must reject before group lookup'))
+    with pytest.raises(SystemExit, match='root'):
+        pve_snapshot.main()
+
+
+def test_root_group_cannot_be_used_as_reader_group(monkeypatch):
+    monkeypatch.setattr(pve_snapshot.os, 'open', lambda *args, **kwargs: pytest.fail('must reject before opening'))
+    with pytest.raises(OSError, match='reader group'):
+        pve_snapshot._open_directory(0)

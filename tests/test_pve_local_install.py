@@ -20,7 +20,8 @@ def test_units_use_fixed_adapter_and_reader_group(tmp_path):
     assert 'DynamicUser=yes' in sender
     assert 'SupplementaryGroups=hwmonitor-mqtt-pve-readers' in sender
     assert 'Environment=PVE_LOCAL_SNAPSHOT=/run/hwmonitor-mqtt-pve/snapshot.json' in sender
-    assert 'Group=hwmonitor-mqtt-pve-readers' in service
+    assert 'User=root\nGroup=hwmonitor-mqtt-pve-readers\n' in service
+    assert 'ExecStart=!/opt/hwmonitor-mqtt-pve/venv/bin/python ' in service
     assert 'RuntimeDirectoryMode=0750' in service
     assert 'RuntimeDirectoryPreserve=yes' in service
     assert ' -m hwmonitor_mqtt.platforms.pve_snapshot' in service
@@ -83,3 +84,37 @@ def test_native_install_prepares_identity_and_activates_without_ca(tmp_path, mon
     assert 'PVE_CLUSTER_ID=' in config.read_text()
     assert any(args[1:3] == ['start', pve.SNAPSHOT_SERVICE] for args in calls)
     assert (tmp_path / 'units' / pve.SNAPSHOT_TIMER).is_file()
+
+
+def test_snapshot_failure_reports_sanitized_phase_and_rolls_back(tmp_path, monkeypatch, capsys):
+    from hwmonitor_mqtt.clients.pve import PveError
+    monkeypatch.setattr(pve, 'SYSTEMD_DIR', str(tmp_path))
+    old = tmp_path / pve.SERVICE_NAME
+    old.write_text('old sender')
+    monkeypatch.setattr(pve, '_ensure_reader_group', lambda run: None)
+    def fail(config):
+        raise PveError('collection_failed')
+    monkeypatch.setattr(pve, '_verify_snapshot', fail)
+    def run(args, **kwargs):
+        return SimpleNamespace(returncode=0)
+    assert pve._activate_local(tmp_path, '/usr/bin/python3', tmp_path / 'pve.env', '/bin/systemctl', run) != 0
+    message = capsys.readouterr().err
+    assert 'snapshot verification' in message
+    assert 'collection_failed' in message
+    assert old.read_text() == 'old sender'
+
+
+def test_timer_start_failure_reports_stage_and_restores_units(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(pve, 'SYSTEMD_DIR', str(tmp_path))
+    old = tmp_path / pve.SERVICE_NAME
+    old.write_text('old sender')
+    monkeypatch.setattr(pve, '_ensure_reader_group', lambda run: None)
+    monkeypatch.setattr(pve, '_verify_snapshot', lambda config: None)
+    def run(args, **kwargs):
+        failed = args[1:] == ['enable', '--now', pve.SNAPSHOT_TIMER]
+        return SimpleNamespace(returncode=1 if failed else 0)
+    assert pve._activate_local(tmp_path, '/usr/bin/python3', tmp_path / 'pve.env', '/bin/systemctl', run) != 0
+    assert 'snapshot timer: operation_failed' in capsys.readouterr().err
+    assert old.read_text() == 'old sender'
+    assert not (tmp_path / pve.SNAPSHOT_SERVICE).exists()
+    assert not (tmp_path / pve.SNAPSHOT_TIMER).exists()

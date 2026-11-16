@@ -1,8 +1,8 @@
 flowchart TD
     A["Root runs the source installer; prepare local node and cluster identity"]
     B["Install root snapshot service, timer and non-root MQTT sender"]
-    C["Root service validates /usr/bin/pvesh and ancestors; collect bounded local VM, CT, disk and SMART data"]
-    D["Terminate process group on collection failure; atomically write snapshot to protected directory"]
+    C["Reader-group runtime directory; root UID and GID command collects bounded local VM, CT, disk and SMART data"]
+    D["Validate root-owned reader-group directory and atomically write snapshot; terminate failed process group"]
     E["Sender selects independent local clients for guests and SMART"]
     F{"Snapshot file, identity and sample time trusted?"}
     G["Read guest inventory and calculate rates from sample times; reuse repeated sample"]
@@ -12,7 +12,7 @@ flowchart TD
     K["Source upgrade backs up and restores prior units, runtime, snapshot and state on failure"]
     L["Tests cover trusted install paths, fixed command, collection, snapshot, sender and recovery"]
     M["Direct source installer rejects an existing runtime and directs source upgrade"]
-    N["Isolated systemd smoke uses trusted system Python and owned pvesh fixture; verify live snapshot, reader permissions and fresh MQTT; clean only owned resources"]
+    N["Isolated systemd smoke validates runtime parent and uses root-GID pvesh fixture; verify live snapshot, reader permissions and fresh MQTT; clean only owned resources"]
     N --> B
     A --> B
     M --> A

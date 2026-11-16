@@ -6,6 +6,15 @@ for python_var in ${!PYTHON@}; do
 done
 export PYTHONNOUSERSITE=1
 
+pinned_commit=
+if (( $# )); then
+    [[ $# == 2 && $1 == --commit && $2 =~ ^[0-9a-f]{40}$ ]] || {
+        echo 'Invalid source commit; expected --commit followed by 40 lowercase hexadecimal characters.' >&2
+        exit 1
+    }
+    pinned_commit=$2
+fi
+
 # Begin prerequisites
 ensure_source_prerequisites() {
     local target=$1 distro=$2 codename=$3 scratch=$4 status installed
@@ -122,7 +131,9 @@ fi
 
 tmp=$(mktemp -d)
 trap 'rm -rf -- "$tmp"' EXIT
-if curl --fail --location --silent --show-error \
+if [[ -n $pinned_commit ]]; then
+    commit=$pinned_commit
+elif curl --fail --location --silent --show-error \
     https://api.github.com/repos/KarlSideProjects/hwmonitor-mqtt/commits/master \
     --output "$tmp/commit.json"; then
     commit=$(python3 -I -c 'import json,re,sys; s=json.load(open(sys.argv[1])).get("sha", ""); sys.exit("Invalid source commit") if not isinstance(s, str) or not re.fullmatch("[0-9a-f]{40}", s) else print(s)' "$tmp/commit.json")
