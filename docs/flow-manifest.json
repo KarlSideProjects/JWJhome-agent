@@ -2932,6 +2932,41 @@
       "reviewer": "independent Codex subagent /root/retro_review",
       "verdict": "pass",
       "evidence": "docs/flow-evidence/reviews/development.delivery/6afa27ac81086ec2cb7437de3e4798c5782ee148b3b01df7584f4c7633b92b27.json"
+    },
+    {
+      "feature": "sender.build",
+      "fingerprint": "ac83f0274eab04308ec16f9ef7252bf7b4a99e857701edfca73860ac7eef699d",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.build/ac83f0274eab04308ec16f9ef7252bf7b4a99e857701edfca73860ac7eef699d.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "9d83a1ae2df6e8f82093ee9b9731c926e0e36e7fa9b945a84f08ff94b1b84a04",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/9d83a1ae2df6e8f82093ee9b9731c926e0e36e7fa9b945a84f08ff94b1b84a04.json"
+    },
+    {
+      "feature": "sender.license",
+      "fingerprint": "faea47ca08e3f5f62ff9de43c0ce1301b8751da5f0be73118f661820d47a9f9f",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.license/faea47ca08e3f5f62ff9de43c0ce1301b8751da5f0be73118f661820d47a9f9f.json"
+    },
+    {
+      "feature": "sender.release-orchestration",
+      "fingerprint": "9614f4c27aa5c37892db57797f2f9f91ca3546a03673e22be614a7a57da346a0",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.release-orchestration/9614f4c27aa5c37892db57797f2f9f91ca3546a03673e22be614a7a57da346a0.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "a300e465d624255fb1a7a445a65bd3a9489b427ccb28435f4931b8cd7e08dcd8",
+      "reviewer": "independent /root/verify_sender_publish_fix",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/a300e465d624255fb1a7a445a65bd3a9489b427ccb28435f4931b8cd7e08dcd8.json"
     }
   ],
   "policy_inputs": [

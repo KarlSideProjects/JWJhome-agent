@@ -1,0 +1,23 @@
+{
+  "feature": "sender.build",
+  "fingerprint": "ac83f0274eab04308ec16f9ef7252bf7b4a99e857701edfca73860ac7eef699d",
+  "reviewer": "independent /root/verify_sender_publish_fix",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    {
+      "base": "9850c1c7d0d08cd98e5f1dbb0d2f86941f8a593c",
+      "candidate_head": "6e979fc8918c8443e5700af89b3c6a9ac3f9571d",
+      "tree": "c4fff8d6a946129e9b595818b6eb1a570e00ba35",
+      "patch_id": "c83b98c887f9cf37cfdb5f6fc34a183d244c60a2",
+      "packet_changed_inputs": [
+        "tests/test_release_workflow.py"
+      ],
+      "scope": "Candidate diff and relevant contracts; unchanged 570f inputs rely on independent prior review; no whole-system audit."
+    }
+  ],
+  "limitations": [
+    "No actual compilation, GitHub publication, device deployment, legal assessment, or platform acceptance.",
+    "Review evidence is external to candidate; checker has not accepted or imported it."
+  ]
+}
