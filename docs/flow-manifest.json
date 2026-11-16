@@ -167,7 +167,17 @@
       "tests/test_source_acceptance.py",
       ".github/workflows/source-acceptance.yml",
       "scripts/release-tests/cloud-images.json",
-      "scripts/release-tests/README.md"
+      "scripts/release-tests/README.md",
+      "hwmonitor_mqtt/clients/pve_snapshot.py",
+      "hwmonitor_mqtt/collectors/pve_local.py",
+      "hwmonitor_mqtt/platforms/pve_snapshot.py",
+      "hwmonitor_mqtt/collectors/pve.py",
+      "tests/test_pve_local.py",
+      "tests/test_pve_snapshot.py",
+      "tests/test_pve_snapshot_writer.py",
+      "tests/test_pve_local_install.py",
+      "tests/test_pve_local_bootstrap.py",
+      "tests/test_pve_install_trust.py"
     ],
     "exclude": {}
   },
@@ -230,7 +240,7 @@
     {
       "path": "hwmonitor_mqtt/collectors/smart.py",
       "kind": "file",
-      "md5": "037f820f491874af24a226d0283e9cc3"
+      "md5": "7bab5a2dc036d94e1f5232360a0cea9e"
     },
     {
       "path": "tests/test_smart_collector.py",
@@ -565,7 +575,7 @@
     {
       "path": "hwmonitor_mqtt/platforms/pve_bootstrap.py",
       "kind": "file",
-      "md5": "217d8a192b05b15ecde65c28b80b5636"
+      "md5": "d4e4e6776038ef3b2cbf15eb5679bb5a"
     },
     {
       "path": "hwmonitor_mqtt/platforms/pve_token.py",
@@ -585,7 +595,7 @@
     {
       "path": "hwmonitor_mqtt/platforms/install.py",
       "kind": "file",
-      "md5": "bed2c5c7d3ed1dbdcecb1fc835984698"
+      "md5": "97d34ee4d34897f82db85a811dfe5914"
     },
     {
       "path": "hwmonitor_mqtt/platforms/detect.py",
@@ -605,22 +615,22 @@
     {
       "path": "hwmonitor_mqtt/platforms/installers/pve.py",
       "kind": "file",
-      "md5": "b867e6f0ca9e43b7f3d0af4d6d1460b8"
+      "md5": "bd949e3f399ce2170ab7a83e651f43c3"
     },
     {
       "path": "tests/test_compiled_bootstrap.py",
       "kind": "file",
-      "md5": "69ba56660976b9e700191b457ecd8a38"
+      "md5": "8dc9af60fe0eb2731d5ed4ab5b827557"
     },
     {
       "path": "tests/test_platform_detection.py",
       "kind": "file",
-      "md5": "c1696ae877eeae27d2101be570afd344"
+      "md5": "4c9bd346784a782c47cde4944e9debad"
     },
     {
       "path": "tests/test_pve_sender.py",
       "kind": "file",
-      "md5": "e843e6ea77c1946df8de8cd212f7e895"
+      "md5": "55e0b217ff9c546fbd7e28e5156f86cc"
     },
     {
       "path": "tests/test_pve_bootstrap_setup.py",
@@ -790,7 +800,7 @@
     {
       "path": "hwmonitor_mqtt/agents/agent_sender_async.py",
       "kind": "file",
-      "md5": "dcd28d1e091442ee8cba72897e9bb986"
+      "md5": "aa46a84eeae51b779092777f275212c0"
     },
     {
       "path": "tests/test_esp_sender_profile.py",
@@ -810,7 +820,7 @@
     {
       "path": "bootstrap-source.sh",
       "kind": "file",
-      "md5": "b91a352d0ce06dbbf36d8625ea00e401"
+      "md5": "bfb66a00a1c3df68b76538d1b237697d"
     },
     {
       "path": "bootstrap-source.ps1",
@@ -860,7 +870,7 @@
     {
       "path": "scripts/source_pve.py",
       "kind": "file",
-      "md5": "9b593e16577777ae2151e30bb3445313"
+      "md5": "52c96586cbbc67fdd84f76cb624909bb"
     },
     {
       "path": "scripts/windows/activate_source.ps1",
@@ -880,7 +890,7 @@
     {
       "path": "tests/test_source_bootstrap.py",
       "kind": "file",
-      "md5": "4c60ee373657920f8124149a04091a33"
+      "md5": "7e5d3190740f1a9c5e1532af54002216"
     },
     {
       "path": "tests/test_source_config.py",
@@ -915,7 +925,7 @@
     {
       "path": "tests/test_source_pve.py",
       "kind": "file",
-      "md5": "7055244283943475cb9e38bb7f2b153b"
+      "md5": "349db26b2ca9a2eea12fe5847be80176"
     },
     {
       "path": "tests/test_windows_source_activation.py",
@@ -1001,6 +1011,56 @@
       "path": "scripts/release-tests/README.md",
       "kind": "file",
       "md5": "0196a6a7102f0d115443d8877babc5ab"
+    },
+    {
+      "path": "hwmonitor_mqtt/clients/pve_snapshot.py",
+      "kind": "file",
+      "md5": "e624bcef56c1cab13b5c56391696b7ae"
+    },
+    {
+      "path": "hwmonitor_mqtt/collectors/pve_local.py",
+      "kind": "file",
+      "md5": "93f1f397f98ed877e6721ff1b0ff75cc"
+    },
+    {
+      "path": "hwmonitor_mqtt/platforms/pve_snapshot.py",
+      "kind": "file",
+      "md5": "2e7afde21d49a7f3a441915e8cb39fbe"
+    },
+    {
+      "path": "hwmonitor_mqtt/collectors/pve.py",
+      "kind": "file",
+      "md5": "6444f78d9db9c77c89e150ff7bf8e348"
+    },
+    {
+      "path": "tests/test_pve_local.py",
+      "kind": "file",
+      "md5": "75ac6ec72508aaff84dd660ec21d467c"
+    },
+    {
+      "path": "tests/test_pve_snapshot.py",
+      "kind": "file",
+      "md5": "24ce41ba55cae1f25e81ef5fe3d3cf5e"
+    },
+    {
+      "path": "tests/test_pve_snapshot_writer.py",
+      "kind": "file",
+      "md5": "e104c1e28fe6da6098861a702d2d6118"
+    },
+    {
+      "path": "tests/test_pve_local_install.py",
+      "kind": "file",
+      "md5": "4e57fbb76bc2fddd8e10036ea31ac0e3"
+    },
+    {
+      "path": "tests/test_pve_local_bootstrap.py",
+      "kind": "file",
+      "md5": "3514640c4205a7e65d7792073e733c23"
+    },
+    {
+      "path": "tests/test_pve_install_trust.py",
+      "kind": "file",
+      "md5": "d4ba0bd4491515034fc0118dee8a3b81"
     }
   ],
   "features": [
@@ -1494,9 +1554,19 @@
         {
           "node": "M",
           "path": "hwmonitor_mqtt/collectors/smart.py"
+        },
+        {
+          "node": "Z",
+          "path": "hwmonitor_mqtt/collectors/smart.py"
+        },
+        {
+          "node": "Y",
+          "path": "hwmonitor_mqtt/collectors/smart.py"
         }
       ],
-      "depends_on": [],
+      "depends_on": [
+        "sender.pve-local"
+      ],
       "policy_inputs": [
         "hwmonitor_mqtt/clients/pve.py"
       ]
@@ -2761,7 +2831,8 @@
         }
       ],
       "depends_on": [
-        "sender.distribution"
+        "sender.distribution",
+        "sender.pve-local"
       ],
       "policy_inputs": [
         ".github/workflows/ci.yml",
@@ -2867,6 +2938,158 @@
         "docs/agents/delivery.md",
         "docs/flows/development.delivery-baseline.md"
       ]
+    },
+    {
+      "id": "sender.pve-local",
+      "flow": "docs/flows/sender.pve-local.mmd",
+      "mappings": [
+        {
+          "node": "A",
+          "path": "bootstrap-source.sh"
+        },
+        {
+          "node": "A",
+          "path": "hwmonitor_mqtt/platforms/pve_bootstrap.py"
+        },
+        {
+          "node": "A",
+          "path": "tests/test_pve_local_bootstrap.py"
+        },
+        {
+          "node": "B",
+          "path": "hwmonitor_mqtt/platforms/installers/pve.py"
+        },
+        {
+          "node": "B",
+          "path": "tests/test_pve_local_install.py"
+        },
+        {
+          "node": "C",
+          "path": "hwmonitor_mqtt/collectors/pve_local.py"
+        },
+        {
+          "node": "C",
+          "path": "tests/test_pve_local.py"
+        },
+        {
+          "node": "D",
+          "path": "hwmonitor_mqtt/platforms/pve_snapshot.py"
+        },
+        {
+          "node": "D",
+          "path": "tests/test_pve_snapshot_writer.py"
+        },
+        {
+          "node": "E",
+          "path": "hwmonitor_mqtt/agents/agent_sender_async.py"
+        },
+        {
+          "node": "E",
+          "path": "tests/test_pve_snapshot.py"
+        },
+        {
+          "node": "F",
+          "path": "hwmonitor_mqtt/clients/pve_snapshot.py"
+        },
+        {
+          "node": "F",
+          "path": "tests/test_pve_snapshot.py"
+        },
+        {
+          "node": "G",
+          "path": "hwmonitor_mqtt/collectors/pve.py"
+        },
+        {
+          "node": "G",
+          "path": "tests/test_pve_sender.py"
+        },
+        {
+          "node": "H",
+          "path": "hwmonitor_mqtt/collectors/smart.py"
+        },
+        {
+          "node": "H",
+          "path": "tests/test_smart_collector.py"
+        },
+        {
+          "node": "I",
+          "path": "hwmonitor_mqtt/collectors/smart.py"
+        },
+        {
+          "node": "I",
+          "path": "hwmonitor_mqtt/clients/pve_snapshot.py"
+        },
+        {
+          "node": "J",
+          "path": "hwmonitor_mqtt/collectors/pve.py"
+        },
+        {
+          "node": "J",
+          "path": "hwmonitor_mqtt/collectors/smart.py"
+        },
+        {
+          "node": "K",
+          "path": "scripts/source_pve.py"
+        },
+        {
+          "node": "K",
+          "path": "tests/test_source_pve.py"
+        },
+        {
+          "node": "L",
+          "path": "tests/test_pve_local.py"
+        },
+        {
+          "node": "L",
+          "path": "tests/test_pve_snapshot.py"
+        },
+        {
+          "node": "L",
+          "path": "tests/test_pve_snapshot_writer.py"
+        },
+        {
+          "node": "L",
+          "path": "tests/test_source_pve.py"
+        },
+        {
+          "node": "L",
+          "path": "tests/test_pve_local_install.py"
+        },
+        {
+          "node": "L",
+          "path": "tests/test_pve_local_bootstrap.py"
+        },
+        {
+          "node": "B",
+          "path": "tests/test_pve_install_trust.py"
+        },
+        {
+          "node": "K",
+          "path": "tests/test_pve_install_trust.py"
+        },
+        {
+          "node": "M",
+          "path": "hwmonitor_mqtt/platforms/installers/pve.py"
+        },
+        {
+          "node": "M",
+          "path": "tests/test_pve_install_trust.py"
+        },
+        {
+          "node": "A",
+          "path": "tests/test_source_bootstrap.py"
+        },
+        {
+          "node": "B",
+          "path": "tests/test_platform_detection.py"
+        }
+      ],
+      "depends_on": [],
+      "requires_review": true,
+      "policy_inputs": [
+        "docs/deployment/installation.md",
+        "docs/configuration/pve.env.example"
+      ]
     }
   ],
   "reviews": [
@@ -2967,6 +3190,105 @@
       "reviewer": "independent /root/verify_sender_publish_fix",
       "verdict": "pass",
       "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/a300e465d624255fb1a7a445a65bd3a9489b427ccb28435f4931b8cd7e08dcd8.json"
+    },
+    {
+      "feature": "development.delivery",
+      "fingerprint": "a7526e70bf498a71d69e14a0a61348c4221e1388534f77b2bb01fadacb3e2dc9",
+      "reviewer": "independent Orca reviewer orca_session_id:ef2a2f71-e5b2-410a-b641-fc829ce97950",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/development.delivery/a7526e70bf498a71d69e14a0a61348c4221e1388534f77b2bb01fadacb3e2dc9.json"
+    },
+    {
+      "feature": "sender.license",
+      "fingerprint": "67a5341b46ef8103bb52c7e151533d38868d63af70de173e61f2fe1a7af7c8c7",
+      "reviewer": "independent Orca reviewer orca_session_id:ef2a2f71-e5b2-410a-b641-fc829ce97950",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.license/67a5341b46ef8103bb52c7e151533d38868d63af70de173e61f2fe1a7af7c8c7.json"
+    },
+    {
+      "feature": "sender.release-inspection",
+      "fingerprint": "96ac87e819d6031e90f779812b7cb556dc25a7cd99acffc8cea5f1fcf11830dc",
+      "reviewer": "independent Orca reviewer orca_session_id:ef2a2f71-e5b2-410a-b641-fc829ce97950",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.release-inspection/96ac87e819d6031e90f779812b7cb556dc25a7cd99acffc8cea5f1fcf11830dc.json"
+    },
+    {
+      "feature": "sender.release-orchestration",
+      "fingerprint": "501de880b5e6590bdd66a478acfe490317ff0f1124848630954e0dca94d53284",
+      "reviewer": "independent Orca reviewer orca_session_id:ef2a2f71-e5b2-410a-b641-fc829ce97950",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.release-orchestration/501de880b5e6590bdd66a478acfe490317ff0f1124848630954e0dca94d53284.json"
+    },
+    {
+      "feature": "sender.smart-discovery",
+      "fingerprint": "0ef93c05a4deead05e963c97d1976912740289ee068c2d21c0dcbf81878f5d87",
+      "reviewer": "independent Orca reviewer orca_session_id:ef2a2f71-e5b2-410a-b641-fc829ce97950",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.smart-discovery/0ef93c05a4deead05e963c97d1976912740289ee068c2d21c0dcbf81878f5d87.json"
+    },
+    {
+      "feature": "sender.build",
+      "fingerprint": "52a75c4cb4d4d807361aeb4de49d87e748202f4dcd4863a77030d8c36f881e5a",
+      "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.build/52a75c4cb4d4d807361aeb4de49d87e748202f4dcd4863a77030d8c36f881e5a.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "416a06a6532c7faa1e7145537ef5b7981e431bbc78f2904645aff02bae6da64a",
+      "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/416a06a6532c7faa1e7145537ef5b7981e431bbc78f2904645aff02bae6da64a.json"
+    },
+    {
+      "feature": "sender.distribution",
+      "fingerprint": "32b12f3b020de23e0e409ac5772361b7f6cf7ecb396dd48535ccbade74f4ddf5",
+      "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.distribution/32b12f3b020de23e0e409ac5772361b7f6cf7ecb396dd48535ccbade74f4ddf5.json"
+    },
+    {
+      "feature": "sender.pve-local",
+      "fingerprint": "dc4063a8b75011407f668854cd8e6667961745a1426080e1982948c52f72aa92",
+      "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.pve-local/dc4063a8b75011407f668854cd8e6667961745a1426080e1982948c52f72aa92.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "d9576effe5839026a44bca819a00fdc2fc89d4101b03c9e0dc268394705d2abb",
+      "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/d9576effe5839026a44bca819a00fdc2fc89d4101b03c9e0dc268394705d2abb.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "5802e857197022cc1efba1fac14953fca4acd10225b9b02577e9f0f0d6aa308d",
+      "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/5802e857197022cc1efba1fac14953fca4acd10225b9b02577e9f0f0d6aa308d.json"
+    },
+    {
+      "feature": "sender.distribution",
+      "fingerprint": "f24825bc1ee4a718d53cb381118c33cf012342e61fff11aa5b9bc1e443f5ff31",
+      "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.distribution/f24825bc1ee4a718d53cb381118c33cf012342e61fff11aa5b9bc1e443f5ff31.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "f9700bbe19a90d99af356e23ba402b59593b1e1948a0261b74955141903f231e",
+      "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+      "verdict": "pass",
+      "findings": [],
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/f9700bbe19a90d99af356e23ba402b59593b1e1948a0261b74955141903f231e.json"
     }
   ],
   "policy_inputs": [

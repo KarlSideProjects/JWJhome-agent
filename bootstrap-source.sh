@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+for python_var in ${!PYTHON@}; do
+    unset "$python_var"
+done
+export PYTHONNOUSERSITE=1
+
 # Begin prerequisites
 ensure_source_prerequisites() {
     local target=$1 distro=$2 codename=$3 scratch=$4 status installed
@@ -84,7 +89,7 @@ if ! command -v python3 >/dev/null 2>&1; then
     apt-get update || echo 'Warning: using existing APT metadata.' >&2
     DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-venv
 fi
-python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || {
+python3 -I -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || {
     echo 'Python 3.11 or newer is required.' >&2; exit 1;
 }
 [[ "$root" == /* ]] || { echo 'Installation path must be absolute.' >&2; exit 1; }
@@ -120,12 +125,12 @@ trap 'rm -rf -- "$tmp"' EXIT
 if curl --fail --location --silent --show-error \
     https://api.github.com/repos/KarlSideProjects/hwmonitor-mqtt/commits/master \
     --output "$tmp/commit.json"; then
-    commit=$(python3 -c 'import json,re,sys; s=json.load(open(sys.argv[1])).get("sha", ""); sys.exit("Invalid source commit") if not isinstance(s, str) or not re.fullmatch("[0-9a-f]{40}", s) else print(s)' "$tmp/commit.json")
+    commit=$(python3 -I -c 'import json,re,sys; s=json.load(open(sys.argv[1])).get("sha", ""); sys.exit("Invalid source commit") if not isinstance(s, str) or not re.fullmatch("[0-9a-f]{40}", s) else print(s)' "$tmp/commit.json")
 else
     curl --fail --location --silent --show-error --max-filesize 10485760 \
         'https://github.com/KarlSideProjects/hwmonitor-mqtt.git/info/refs?service=git-upload-pack' \
         --output "$tmp/refs"
-    commit=$(python3 - "$tmp/refs" <<'PY'
+    commit=$(python3 -I - "$tmp/refs" <<'PY'
 import pathlib, re, sys
 b = pathlib.Path(sys.argv[1]).read_bytes()
 packets, pos = [], 0
@@ -155,11 +160,11 @@ curl --fail --location --silent --show-error \
 curl --fail --location --silent --show-error \
     "https://github.com/KarlSideProjects/hwmonitor-mqtt/archive/$commit.tar.gz" \
     --output "$tmp/source.tar.gz"
-source_dir=$(python3 "$tmp/source_archive.py" "$tmp/source.tar.gz" "$tmp/unpacked")
+source_dir=$(python3 -I "$tmp/source_archive.py" "$tmp/source.tar.gz" "$tmp/unpacked")
 [[ ( "$source_dir" == "$tmp/unpacked/hwmonitor-mqtt-$commit" || "$source_dir" == "$tmp/unpacked/JWJhome-agent-$commit" ) && -f "$source_dir/scripts/source_linux_install.py" ]] || {
     echo 'Downloaded source identity is invalid.' >&2; exit 1;
 }
-target=$(cd "$source_dir" && PYTHONPATH="$source_dir" python3 -c 'from hwmonitor_mqtt.platforms.detect import detect_target; t=detect_target(); print(t.system if t.system == "pve" or (t.system == "linux" and t.distribution in ("debian", "ubuntu", "raspbian")) else "unsupported")')
+target=$(cd "$source_dir" && python3 -I -c 'import sys; sys.path.insert(0, sys.argv[1]); from hwmonitor_mqtt.platforms.detect import detect_target; t=detect_target(); print(t.system if t.system == "pve" or (t.system == "linux" and t.distribution in ("debian", "ubuntu", "raspbian")) else "unsupported")' "$source_dir")
 [[ $target == linux || $target == pve ]] || { echo 'Unsupported or unrecognized host.' >&2; exit 1; }
 [[ $target != pve || $machine == x86_64 ]] || { echo 'PVE requires x64.' >&2; exit 1; }
 if [[ ! -e "$root" ]]; then
@@ -185,9 +190,9 @@ if [[ $target == pve ]]; then
         fi
     fi
     pve_config=${PVE_CONFIG_FILE:-/etc/hwmonitor-mqtt/pve.env}
-    (cd "$source_dir" && PYTHONPATH="$source_dir" python3 -m hwmonitor_mqtt.platforms.pve_bootstrap \
-        --config "$pve_config" --template "$source_dir/docs/configuration/pve.env.example")
+    (cd "$source_dir" && python3 -I -c 'import runpy,sys; sys.path.insert(0,sys.argv.pop(1)); runpy.run_module("hwmonitor_mqtt.platforms.pve_bootstrap",run_name="__main__",alter_sys=True)' "$source_dir" \
+        --config "$pve_config" --template "$source_dir/docs/configuration/pve.env.example" --local)
 fi
-(cd "$source_dir" && PYTHONPATH="$source_dir" python3 -m scripts.source_linux_install "$source_dir" "$root" "$commit" "$target")
+(cd "$source_dir" && python3 -I -c 'import runpy,sys; sys.path.insert(0,sys.argv.pop(1)); runpy.run_module("scripts.source_linux_install",run_name="__main__",alter_sys=True)' "$source_dir" "$source_dir" "$root" "$commit" "$target")
 rm -f -- "$root/.hwmonitor-mqtt-bootstrap-pending"
 echo "Sender source $commit installed."

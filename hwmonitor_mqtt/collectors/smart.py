@@ -1,5 +1,6 @@
 """Read-only, cross-platform disk SMART normalization and alert evaluation."""
 
+import copy
 import json
 import os
 import re
@@ -29,6 +30,7 @@ class SmartCollector:
         self.smartctl, self.pve_client, self.provider = smartctl, pve_client, provider
         self.monotonic, self.wall_clock = monotonic, wall_clock
         self._crc_baselines = {}
+        self._local_last = None
 
     def _run(self, *args):
         return subprocess.run([self.smartctl, *args], capture_output=True, text=True, timeout=15)
@@ -36,6 +38,9 @@ class SmartCollector:
     def poll_once(self, now=None):
         observed_at = int(self.wall_clock() if now is None else now)
         try:
+            from hwmonitor_mqtt.clients.pve_snapshot import PveSnapshotClient
+            if isinstance(self.pve_client, PveSnapshotClient):
+                return self._local_poll()
             if self.provider:
                 sources = self.provider()
             else:
@@ -50,6 +55,45 @@ class SmartCollector:
             return {"observed_at": observed_at, "status": status, "alerts": alerts, "devices": devices}
         except Exception:
             return {"observed_at": observed_at, "status": "unavailable", "alerts": [], "devices": {}}
+
+    def _local_poll(self):
+        client = self.pve_client
+        try:
+            rows = client.disks_list()
+            devices, alerts, errors = {}, [], dict(client.smart_errors)
+            for row in rows:
+                path = row.get("devpath") or row.get("path") or row.get("dev")
+                if not isinstance(path, str):
+                    continue
+                try:
+                    raw = _pve_smart_to_json(client.disk_smart(path))
+                    if not raw:
+                        raise ValueError
+                    device = _normalize_device(path, raw, row, self._crc_baselines)
+                    _evaluate(device, alerts)
+                    devices[path] = device
+                except Exception:
+                    errors[path] = "collection_failed"
+            partial = client.partial or bool(errors)
+            retained = False
+            if partial and self._local_last:
+                for path, device in self._local_last["devices"].items():
+                    if path in errors or client.partial and path not in devices:
+                        retained = True
+                        devices[path] = copy.deepcopy(device)
+                        alerts.extend(copy.deepcopy(device["alerts"]))
+            status = max((d["status"] for d in devices.values()), key=lambda x: _SEVERITY[x]) if devices else "unavailable"
+            if (partial or any(d["status"] in ("unknown", "unavailable") for d in devices.values())) and status not in ("warning", "critical"):
+                status = "unavailable"
+            observed_at = min(client.observed_at, self._local_last["observed_at"]) if retained else client.observed_at
+            result = {"observed_at": observed_at, "status": status, "alerts": alerts,
+                      "devices": devices, "partial": partial, "errors": errors}
+            self._local_last = copy.deepcopy(result)
+            return result
+        except Exception:
+            result = copy.deepcopy(self._local_last or {"observed_at": None, "alerts": [], "devices": {}})
+            result.update(status="unavailable", partial=True, errors={"snapshot": "collection_failed"})
+            return result
 
     def _smartctl_devices(self):
         result = []

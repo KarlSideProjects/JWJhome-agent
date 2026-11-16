@@ -1,0 +1,12 @@
+{
+  "feature": "sender.pve-local",
+  "fingerprint": "dc4063a8b75011407f668854cd8e6667961745a1426080e1982948c52f72aa92",
+  "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "聯合獨立審查：本人審查 bootstrap、安裝權限、隔離啟動及 source 升級回復；核心獨立 reviewer 審查 collector、client、writer、sender 接線與 SMART，重現修正後測試通過。核心和安裝報告所列已審 source SHA-256 與目前符合；最終流程文件核對固定 pvesh 路徑、受限 partial 結果及回復邊界。",
+    "基準 fcb29d5d5efcca9207edd210c60445c243e2aa50；最終 packet fingerprint 與 explain 一致。共同政策由獨立政策審查及最終文件差異核對。",
+    "真實 PVE 與 systemd 啟動、權限、故障回復尚未驗收；程式審查不等同部署驗收。"
+  ]
+}

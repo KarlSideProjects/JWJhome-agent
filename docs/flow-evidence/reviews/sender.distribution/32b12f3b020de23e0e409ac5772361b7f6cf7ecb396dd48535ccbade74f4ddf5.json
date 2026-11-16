@@ -1,0 +1,12 @@
+{
+  "feature": "sender.distribution",
+  "fingerprint": "32b12f3b020de23e0e409ac5772361b7f6cf7ecb396dd48535ccbade74f4ddf5",
+  "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "審查安裝入口、PVE 路徑及共用文件的變化；受限容器實測不可信 runtime 和 symlink 被拒絕，來源入口保護與既有 private settings 由測試覆蓋。",
+    "基準 fcb29d5d5efcca9207edd210c60445c243e2aa50；最終 packet fingerprint 與 explain 一致。共同政策由獨立政策審查及最終文件差異核對。",
+    "真實 PVE 與 systemd 啟動、權限、故障回復尚未驗收；程式審查不等同部署驗收。"
+  ]
+}

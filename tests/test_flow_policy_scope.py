@@ -41,17 +41,19 @@ INSTALLER_FEATURES = {
     ('scripts/windows/start_windows_sender.ps1', INSTALLER_FEATURES),
     ('hwmonitor_mqtt/platforms/install.py', INSTALLER_FEATURES),
     ('hwmonitor_mqtt/platforms/detect.py', INSTALLER_FEATURES),
-    ('hwmonitor_mqtt/platforms/pve_bootstrap.py', INSTALLER_FEATURES),
+    ('hwmonitor_mqtt/platforms/pve_bootstrap.py', INSTALLER_FEATURES | {'sender.pve-local', 'sender.smart-discovery'}),
     ('hwmonitor_mqtt/platforms/pve_token.py', INSTALLER_FEATURES),
     ('hwmonitor_mqtt/clients/pve.py', INSTALLER_FEATURES | {'sender.smart-discovery'}),
     ('tests/_pwsh.py', INSTALLER_FEATURES),
     ('tests/test_powershell_syntax.py', INSTALLER_FEATURES),
     ('docs/deployment/installation.md', {
         'sender.distribution', 'sender.compiled-lifecycle', 'sender.source-lifecycle',
+        'sender.pve-local', 'sender.smart-discovery',
     }),
     ('docs/configuration/pve.env.example', {
         'sender.build', 'sender.release-inspection', 'sender.compiled-lifecycle',
         'sender.release-orchestration', 'sender.source-lifecycle',
+        'sender.pve-local', 'sender.smart-discovery',
     }),
     ('uv.lock', {
         'sender.build', 'sender.compiled-lifecycle', 'sender.source-lifecycle',

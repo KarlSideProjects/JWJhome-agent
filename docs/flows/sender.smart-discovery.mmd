@@ -1,5 +1,7 @@
 flowchart TD
     A["Compute observation time before guarded poll"]
+    Z{"Local snapshot client configured"}
+    Y["Read local snapshot directly; see sender.pve-local"]
     B{"Provider supplied"}
     C{"smartctl found and scan succeeds"}
     D["Read usable device data and track fallback need"]
@@ -12,7 +14,9 @@ flowchart TD
     K["Fixture mocks executable lookup and command execution"]
     L["Missing executable test expects unavailable"]
     M{"PVE client configured"}
-    A -->|success| B
+    A -->|success| Z
+    Z -->|yes| Y
+    Z -->|no| B
     A -->|error| J
     B -->|yes| G
     B -->|no| C

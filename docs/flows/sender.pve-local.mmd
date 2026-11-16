@@ -1,0 +1,26 @@
+flowchart TD
+    A["Root runs the source installer; prepare local node and cluster identity"]
+    B["Install root snapshot service, timer and non-root MQTT sender"]
+    C["Root service validates /usr/bin/pvesh and ancestors; collect bounded local VM, CT, disk and SMART data"]
+    D["Terminate process group on collection failure; atomically write snapshot to protected directory"]
+    E["Sender selects independent local clients for guests and SMART"]
+    F{"Snapshot file, identity and sample time trusted?"}
+    G["Read guest inventory and calculate rates from sample times; reuse repeated sample"]
+    H["Read disk inventory and SMART from the same snapshot; normalize and evaluate alerts"]
+    I["Partial SMART failures expose errors, retain affected alerts and old time, and do not report healthy"]
+    J["Stale or invalid snapshot: guest error and SMART unavailable; preserve last known data"]
+    K["Source upgrade backs up and restores prior units, runtime, snapshot and state on failure"]
+    L["Tests cover trusted install paths, fixed command, collection, snapshot, sender and recovery"]
+    M["Direct source installer rejects an existing runtime and directs source upgrade"]
+    A --> B
+    M --> A
+    B -->|success| C
+    B -->|failure| K
+    C --> D
+    D --> E
+    E --> F
+    F -->|yes| G
+    F -->|yes| H
+    F -->|no| J
+    H -->|partial| I
+    L --> A

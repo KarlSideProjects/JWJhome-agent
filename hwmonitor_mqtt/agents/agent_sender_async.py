@@ -91,14 +91,22 @@ pve_collector = None
 def initialize_pve_collector():
     """Start the independent PVE poller only for the native PVE service."""
     global pve_collector
-    if os.getenv("PVE_ENABLED") != "1":
+    if os.getenv("PVE_ENABLED") != "1" and not os.getenv("PVE_LOCAL_SNAPSHOT"):
         return None
     from hwmonitor_mqtt.clients.pve import PveApiClient, PveConfig, PveError
     from hwmonitor_mqtt.collectors.pve import PveCollector
     try:
-        config = PveConfig.from_environment(env_file=os.getenv("PVE_CONFIG_FILE", "/etc/hwmonitor-mqtt/pve.env"))
-        pve_collector = PveCollector(PveApiClient(config)) if config else PveCollector(None)
-        smart_collector.pve_client = pve_collector.client
+        local_path = os.getenv("PVE_LOCAL_SNAPSHOT")
+        if local_path:
+            from hwmonitor_mqtt.clients.pve_snapshot import LocalPveConfig, PveSnapshotClient
+            node = os.getenv("PVE_NODE") or socket.gethostname().split(".", 1)[0]
+            config = LocalPveConfig(os.getenv("PVE_CLUSTER_ID") or node, node)
+            pve_collector = PveCollector(PveSnapshotClient(config, local_path))
+            smart_collector.pve_client = PveSnapshotClient(config, local_path)
+        else:
+            config = PveConfig.from_environment(env_file=os.getenv("PVE_CONFIG_FILE", "/etc/hwmonitor-mqtt/pve.env"))
+            pve_collector = PveCollector(PveApiClient(config)) if config else PveCollector(None)
+            smart_collector.pve_client = pve_collector.client
     except PveError as error:
         pve_collector = PveCollector(None)
         pve_collector.mark_error(error)

@@ -1,6 +1,8 @@
 """Prepare and validate the host-local PVE sender configuration."""
 
 import argparse
+import os
+import tempfile
 from pathlib import Path
 import re
 import shutil
@@ -128,6 +130,38 @@ def prepare(config_file, template_file, ca_source="/etc/pve/pve-root-ca.pem", ho
     return config_file
 
 
+def prepare_local(config_file, node_name=None, cluster_name=None):
+    """Preserve existing identity and secrets while filling missing local identity."""
+    config_file = Path(config_file)
+    if config_file.is_symlink() or config_file.parent.is_symlink():
+        raise PveSetupError("untrusted PVE configuration path")
+    node = (node_name if node_name is not None else socket.gethostname()).split(".", 1)[0]
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.-]{0,127}", node):
+        raise PveSetupError("invalid local PVE node name")
+    cluster = _safe_label(cluster_name or node)
+    values = _read_values(config_file)
+    if values.get("PVE_NODE") and values["PVE_NODE"] != node:
+        raise PveSetupError("PVE_NODE differs from the local node; correct PVE_NODE before installation")
+    original = config_file.read_text(encoding="utf-8") if config_file.exists() else ""
+    missing = [(key, value) for key, value in (("PVE_NODE", node), ("PVE_CLUSTER_ID", cluster))
+               if not values.get(key)]
+    if missing and any(key in values for key, _ in missing):
+        raise PveSetupError("PVE identity is empty")
+    config_file.parent.mkdir(parents=True, exist_ok=True)
+    if missing or not config_file.exists():
+        if original and not original.endswith("\n"):
+            original += "\n"
+        fd, name = tempfile.mkstemp(prefix=".pve-config-", dir=config_file.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as output:
+                output.write(original + "".join(f"{key}={value}\n" for key, value in missing))
+            os.replace(name, config_file)
+        finally:
+            Path(name).unlink(missing_ok=True)
+    config_file.chmod(0o600)
+    return config_file
+
+
 def _dynamic_user_can_read(path):
     path = Path(path)
     try:
@@ -170,11 +204,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--template", required=True)
+    parser.add_argument("--local", action="store_true")
     args = parser.parse_args(argv)
     try:
         config = Path(args.config)
-        provision_token(config, prepare_config=lambda: prepare(args.config, args.template))
-        preflight(config)
+        if args.local:
+            prepare_local(config)
+        else:
+            provision_token(config, prepare_config=lambda: prepare(args.config, args.template))
+            preflight(config)
     except (PveSetupError, PveTokenError) as error:
         print(str(error), file=sys.stderr)
         return 2

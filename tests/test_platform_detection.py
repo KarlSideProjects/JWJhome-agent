@@ -334,7 +334,7 @@ def test_pve_dry_run_reports_unconfigured_native_sender_without_installing(monke
     result = json.loads(capsys.readouterr().out)
     assert result["target"]["system"] == "pve"
     assert result["collector"] == "hwmonitor_mqtt.agents.agent_sender_async"
-    assert result["status"] == "PVE configuration is unconfigured"
+    assert result["status"] == "PVE local identity is unconfigured"
     assert result["requirements"] == ["native systemd service"]
     assert result["command"][-1] == "/missing/pve.env"
 
@@ -480,3 +480,30 @@ def test_compiled_pve_controller_preserves_installer_status(monkeypatch, tmp_pat
     monkeypatch.setattr(pve, '__compiled__', True, raising=False)
     monkeypatch.setattr(pve, 'main', lambda argv: status)
     assert install.main(['--project-root', str(tmp_path)]) == status
+
+
+@pytest.mark.parametrize('api_error, local_error', [
+    ('HTTPS token invalid', None),
+    (None, 'local identity invalid'),
+])
+def test_compiled_native_dry_run_uses_api_readiness(monkeypatch, capsys, api_error, local_error):
+    from hwmonitor_mqtt.platforms.installers import pve
+    monkeypatch.setattr(install, 'detect_target', lambda: Target('linux', 'pve', 'native', 'fixture', 'debian', ()))
+    monkeypatch.setattr(pve, '__compiled__', True, raising=False)
+    monkeypatch.setattr(pve, 'readiness', lambda config: api_error)
+    monkeypatch.setattr(pve, 'local_readiness', lambda config: local_error)
+    assert install.main(['--dry-run']) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result['ready'] is (api_error is None)
+    if api_error:
+        assert result['status'] == api_error
+
+
+def test_source_native_dry_run_uses_local_readiness(monkeypatch, capsys):
+    from hwmonitor_mqtt.platforms.installers import pve
+    monkeypatch.setattr(install, 'detect_target', lambda: Target('linux', 'pve', 'native', 'fixture', 'debian', ()))
+    monkeypatch.delattr(pve, '__compiled__', raising=False)
+    monkeypatch.setattr(pve, 'readiness', lambda config: 'HTTPS token invalid')
+    monkeypatch.setattr(pve, 'local_readiness', lambda config: None)
+    assert install.main(['--dry-run']) == 0
+    assert json.loads(capsys.readouterr().out)['ready'] is True
