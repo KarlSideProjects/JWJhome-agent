@@ -1,0 +1,13 @@
+{
+  "feature": "sender.compiled-lifecycle",
+  "fingerprint": "e473835e601940c4654ce0f031746fa1811d769fbf0964fbad3715bd6ef97ca1",
+  "reviewer": "independent Codex Terra medium /root/review",
+  "verdict": "pass",
+  "findings": [],
+  "base": "43b91da8de0cfcbe4e71a0385c385e038275985c",
+  "scope": "依交付規範的本次變更及相關契約有界獨立審查；未實測 Windows。",
+  "basis": "完整模式加入非同步採集，ESP 不啟動且不輸出；受 SYSTEM 執行帳號的 Docker context 限制，尚未真機驗證。",
+  "limitations": [
+    "Windows Docker Desktop SYSTEM 排程、Windows 編譯產物與遠端檢查尚未驗證。"
+  ]
+}

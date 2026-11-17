@@ -29,6 +29,7 @@ try:
     from dotenv import load_dotenv
     from hwmonitor_mqtt.transport.mqtt import configuration, create_client, publish
     from hwmonitor_mqtt.collectors.smart import SmartCollector
+    from hwmonitor_mqtt.collectors import docker
 except ImportError as e:
     print(f"A required package is not installed: {e}")
     print("Please install dependencies first.")
@@ -103,6 +104,7 @@ ESP_DISK_DELTA_BYTES = _env_float("ESP_DISK_DELTA_BYTES", 65536.0)
 ESP_GPU_DELTA = _env_float("ESP_GPU_DELTA", 3.0)
 MAX_PAYLOAD_BYTES = 262144
 SMART_POLL_INTERVAL_SEC = _env_float("SMART_POLL_INTERVAL_SEC", 300.0)
+DOCKER_POLL_INTERVAL_SEC = _env_float("DOCKER_POLL_INTERVAL_SEC", 30.0)
 
 # ===== LibreHardwareMonitor Process Config =====
 LHM_PATH = os.getenv("LHM_PATH", "").strip()
@@ -366,6 +368,7 @@ metrics: Dict[str, Any] = {
     "system": None,
     "gpu": [],
     "disk_smart": {"observed_at": None, "status": "unavailable", "alerts": [], "devices": {}},
+    "docker": {"observed_at": None, "status": "unavailable", "containers": [], "truncated": False},
 }
 smart_collector = SmartCollector(provider=lambda: get_windows_disk_sources())
 
@@ -1024,6 +1027,7 @@ def build_full_payload(now_ts: Optional[int] = None) -> Dict[str, Any]:
         "gpu": gpus[0] if gpus else None,
         "gpus": gpus,
         "disk_smart": copy.deepcopy(metrics.get("disk_smart") or {"observed_at": None, "status": "unavailable", "alerts": [], "devices": {}}),
+        "docker": copy.deepcopy(metrics["docker"]),
         "mqtt_stats": {
             "publish_ok": mqtt_stats["publish_ok"],
             "publish_err": mqtt_stats["publish_err"],
@@ -1231,6 +1235,12 @@ async def loop_smart():
         await asyncio.sleep(max(1.0, SMART_POLL_INTERVAL_SEC))
 
 
+async def loop_docker():
+    while True:
+        metrics["docker"] = await asyncio.to_thread(docker.poll_once)
+        await asyncio.sleep(max(1.0, DOCKER_POLL_INTERVAL_SEC))
+
+
 async def loop_publish():
     while True:
         publish_metrics()
@@ -1305,6 +1315,7 @@ async def main():
             loop_network(),
             loop_lhm_wmi(),
             loop_smart(),
+            *([loop_docker()] if SENDER_PROFILE == "full" else []),
             loop_publish(),
             mqtt_reconnector(),
         )

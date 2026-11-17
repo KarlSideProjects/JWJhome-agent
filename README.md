@@ -20,6 +20,8 @@
 | Linux／PVE 電腦 | [bootstrap-source.sh](bootstrap-source.sh) | [Shell 命令](docs/deployment/installation.md#在-linux-或-pve-安裝-sender) |
 | R36／TrimUI 掌機 | [掌機安裝入口](https://github.com/KarlSideProjects/JWJhome-handheld#安裝入口) | [掌機安裝步驟](https://github.com/KarlSideProjects/JWJhome-handheld/blob/main/docs/installation.md#快速安裝) |
 
+Windows 的 full 模式會透過 Docker CLI 監控目前 Docker context 的容器；context 可能連到遠端，並不保證是本機。排程執行帳號必須能找到 Docker CLI 並存取該 context。ESP 模式不採集 Docker。欄位與限制見 [Docker 資料契約](docs/flows/windows-docker-contract.md)。
+
 首次安裝會詢問 MQTT 設定，既有設定會保留。PVE 使用原生 systemd 服務；Windows 使用開機排程。完整限制見 [安裝與維護](docs/deployment/installation.md)。
 
 Windows 在系統管理員 PowerShell 貼上一行：
