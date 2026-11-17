@@ -1,0 +1,12 @@
+{
+  "feature": "sender.compiled-lifecycle",
+  "fingerprint": "bf188198fe55f7defdb8780c66a674aec7a260dc2e1875644d9e37de2d752d93",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "影響沿 sender.build 依賴傳遞；compiled installer 未改，native fixture 只測 source 安裝。",
+    "本次僅覆核 b36e4de 後的 native smoke 變更；未變範圍沿用該提交獨立審查證據 docs/flow-evidence/reviews/sender.compiled-lifecycle/5802e857197022cc1efba1fac14953fca4acd10225b9b02577e9f0f0d6aa308d.json，未宣稱重新審查所有產品原始碼。",
+    "native smoke 20 項測試通過；三項初審缺陷已核對失敗路徑與測試。真實 GitHub systemd、完整候選建置及發布未在本次驗證。"
+  ]
+}

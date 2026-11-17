@@ -6,6 +6,13 @@ import pytest
 from scripts.source_pve import PveActivation
 
 
+@pytest.fixture(autouse=True)
+def trusted_fixture_paths(monkeypatch):
+    monkeypatch.setattr("scripts.source_pve._validate_trusted_path", lambda path: None)
+    monkeypatch.setattr("scripts.source_pve._validate_trusted_tree", lambda path: None)
+    monkeypatch.setattr("scripts.source_pve._validate_executable", lambda path: None)
+
+
 @pytest.fixture
 def existing_install(tmp_path):
     root, runtime, units = tmp_path / 'root', tmp_path / 'runtime', tmp_path / 'systemd'
@@ -33,7 +40,7 @@ def fake_systemd(runtime, units, calls, *, install_fails=False):
         if args[:2] == ['systemctl', 'show']:
             text = ('path=' + str(runtime / 'venv' / 'bin' / 'python') if '--property=ExecStart' in args else '42')
             return subprocess.CompletedProcess(args, 0, text + '\n', '')
-        if '-m' in args and 'hwmonitor_mqtt.platforms.installers.pve' in args:
+        if '-c' in args and any('hwmonitor_mqtt.platforms.installers.pve' in arg for arg in args):
             (runtime / 'app' / 'hwmonitor_mqtt').mkdir(parents=True)
             (runtime / 'app' / 'hwmonitor_mqtt' / 'sender.py').write_text('new source')
             (runtime / 'venv').mkdir()
@@ -166,7 +173,7 @@ def test_first_install_failure_before_unit_creation_is_recoverable(tmp_path):
             return subprocess.CompletedProcess(args, 4, '', '')
         if args[:2] in (['systemctl', 'stop'], ['systemctl', 'disable']):
             return subprocess.CompletedProcess(args, 5, '', 'unit not found')
-        if '-m' in args and 'hwmonitor_mqtt.platforms.installers.pve' in args:
+        if '-c' in args and any('hwmonitor_mqtt.platforms.installers.pve' in arg for arg in args):
             (runtime / 'app').mkdir(parents=True)
             (runtime / 'venv').mkdir()
             return subprocess.CompletedProcess(args, 1, '', 'venv setup failed')
@@ -199,7 +206,7 @@ def test_first_install_failure_after_unit_creation_disables_before_removal(tmp_p
             return subprocess.CompletedProcess(args, 4, '', '')
         if args[:2] in (['systemctl', 'stop'], ['systemctl', 'disable']):
             return subprocess.CompletedProcess(args, 0 if unit.exists() else 5, '', '')
-        if '-m' in args and 'hwmonitor_mqtt.platforms.installers.pve' in args:
+        if '-c' in args and any('hwmonitor_mqtt.platforms.installers.pve' in arg for arg in args):
             (runtime / 'app').mkdir(parents=True)
             (runtime / 'venv').mkdir()
             unit.write_text('new unit')
@@ -212,4 +219,88 @@ def test_first_install_failure_after_unit_creation_disables_before_removal(tmp_p
     activation.recover()
     assert not unit.exists()
     assert sum(args[:2] == ['systemctl', 'disable'] for args in calls) == 1
-    assert sum(args[:2] == ['systemctl', 'stop'] for args in calls) == 1
+    assert ['systemctl', 'stop', 'hwmonitor-mqtt-pve.service'] in calls
+
+
+def test_adapter_units_and_snapshot_restored_on_install_failure(existing_install, tmp_path, monkeypatch):
+    monkeypatch.setattr("scripts.source_pve._check_snapshot_path", lambda path: None)
+    from hwmonitor_mqtt.platforms.installers.pve import SNAPSHOT_SERVICE, SNAPSHOT_TIMER
+
+    root, runtime, units, unit, override = existing_install
+    snapshot = tmp_path / 'run' / 'snapshot.json'
+    snapshot.parent.mkdir()
+    snapshot.write_text('old snapshot')
+    for name in (SNAPSHOT_SERVICE, SNAPSHOT_TIMER):
+        (units / name).write_text('old ' + name)
+    calls = []
+    base = fake_systemd(runtime, units, calls, install_fails=True)
+    def run(args, **kwargs):
+        if '-c' in args and any('hwmonitor_mqtt.platforms.installers.pve' in arg for arg in args):
+            for name in (SNAPSHOT_SERVICE, SNAPSHOT_TIMER):
+                (units / name).write_text('new')
+            snapshot.write_text('new snapshot')
+        if args[:2] == ['systemctl', 'is-enabled'] and args[-1] == SNAPSHOT_SERVICE:
+            calls.append(args)
+            return subprocess.CompletedProcess(args, 0, 'static\n', '')
+        return base(args, **kwargs)
+    activation = PveActivation(root, '/tmp/pve.env', runtime=runtime, units=units,
+                               snapshot=snapshot, run=run, sleep=lambda _: None)
+    activation.prepare()
+    with pytest.raises(RuntimeError, match='startup'):
+        activation.activate()
+    activation.recover()
+    assert snapshot.read_text() == 'old snapshot'
+    for name in (SNAPSHOT_SERVICE, SNAPSHOT_TIMER):
+        assert (units / name).read_text() == 'old ' + name
+        assert ['systemctl', 'start', name] in calls
+    assert ['systemctl', 'enable', SNAPSHOT_TIMER] in calls
+    assert ['systemctl', 'enable', SNAPSHOT_SERVICE] not in calls
+    assert calls.index(['systemctl', 'stop', SNAPSHOT_TIMER]) < calls.index(['systemctl', 'stop', SNAPSHOT_SERVICE])
+    assert calls.index(['systemctl', 'start', SNAPSHOT_TIMER]) < calls.index(['systemctl', 'restart', 'hwmonitor-mqtt-pve.service'])
+
+
+def test_new_adapter_removed_on_install_failure(existing_install, tmp_path, monkeypatch):
+    monkeypatch.setattr("scripts.source_pve._check_snapshot_path", lambda path: None)
+    from hwmonitor_mqtt.platforms.installers.pve import SNAPSHOT_SERVICE, SNAPSHOT_TIMER
+
+    root, runtime, units, _, _ = existing_install
+    snapshot = tmp_path / 'run' / 'snapshot.json'
+    snapshot.parent.mkdir()
+    calls = []
+    base = fake_systemd(runtime, units, calls, install_fails=True)
+    def run(args, **kwargs):
+        if '-c' in args and any('hwmonitor_mqtt.platforms.installers.pve' in arg for arg in args):
+            for name in (SNAPSHOT_SERVICE, SNAPSHOT_TIMER):
+                (units / name).write_text('new')
+            snapshot.write_text('new snapshot')
+        return base(args, **kwargs)
+    activation = PveActivation(root, '/tmp/pve.env', runtime=runtime, units=units,
+                               snapshot=snapshot, run=run, sleep=lambda _: None)
+    activation.prepare()
+    with pytest.raises(RuntimeError, match='startup'):
+        activation.activate()
+    activation.recover()
+    assert not snapshot.exists()
+    for name in (SNAPSHOT_SERVICE, SNAPSHOT_TIMER):
+        assert not (units / name).exists()
+        assert ['systemctl', 'disable', name] in calls
+
+
+def test_installer_python_uses_isolated_environment(existing_install, monkeypatch):
+    root, runtime, units, _, _ = existing_install
+    calls = []
+    real_run = fake_systemd(runtime, units, calls)
+    seen = []
+    def run(args, **kwargs):
+        if '-c' in args:
+            seen.append((args, kwargs['env']))
+        return real_run(args, **kwargs)
+    monkeypatch.setenv('PYTHONPATH', '/attacker')
+    monkeypatch.setenv('PYTHONHOME', '/attacker')
+    activation = PveActivation(root, '/tmp/pve.env', runtime=runtime, units=units, run=run, sleep=lambda _: None)
+    activation.prepare()
+    activation.activate()
+    activation.finish()
+    assert seen[0][0][1] == '-I'
+    assert 'PYTHONPATH' not in seen[0][1]
+    assert 'PYTHONHOME' not in seen[0][1]

@@ -3,15 +3,15 @@ from pathlib import Path
 
 def test_release_workflow_is_master_only_and_has_no_publisher_credentials():
     workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/sender-release.yml').read_text()
-    assert 'branches: [master]' in workflow
     assert 'workflow_dispatch:' in workflow
-    assert "github.ref == 'refs/heads/master'" in workflow
+    assert 'test "$REF" = refs/heads/master' in workflow
     assert 'fetch-depth: 0' in workflow
     assert 'persist-credentials: false' in workflow
-    assert workflow.count('secrets.SENDER_RELEASE_TOKEN') == 4
+    assert workflow.count('secrets.SENDER_RELEASE_TOKEN') == 3
     assert 'environment: sender-release-publisher' in workflow
-    assert 'scripts/release_controller.py drain' in workflow
-    assert 'schedule:' in workflow
+    assert 'scripts/release_controller.py drain --source' in workflow
+    assert 'schedule:' not in workflow
+    assert '  push:' not in workflow
     assert 'scripts/release_version.py' in workflow
 
 
@@ -44,8 +44,6 @@ def test_preparation_requires_all_build_jobs_and_uses_controller():
     workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/sender-release.yml').read_text()
     assert 'needs: [version, checks, linux-build, windows-build]' in workflow
     assert 'scripts/release_controller.py prepare' in workflow
-    assert 'SOURCE_WORKFLOW_TOKEN: ${{ github.token }}' in workflow
-    assert 'actions: write' in workflow
 
 
 def test_build_tree_remains_private_but_owned_by_runner():
@@ -55,33 +53,30 @@ def test_build_tree_remains_private_but_owned_by_runner():
     assert 'chmod -R' not in workflow
 
 
-def test_publisher_requires_successful_prepare_or_explicit_recovery():
+def test_release_authorization_event_matrix():
+    import os
+    import subprocess
+    import textwrap
+
     workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/sender-release.yml').read_text()
+    script = textwrap.dedent(workflow.split('      - name: Require explicit authorization', 1)[1].split('        run: |\n', 1)[1].split('\n  version:', 1)[0])
+    def check(build, publish, only, source='a' * 40, ref='refs/heads/master'):
+        env = dict(os.environ, CONFIRM_BUILD=build, CONFIRM_PUBLISH=publish, BUILD_ONLY=only, SOURCE=source, REF=ref)
+        return subprocess.run(['bash', '-e', '-c', script], env=env, capture_output=True, text=True)
+    assert check('true', 'false', 'true').returncode == 0
+    assert check('true', 'true', 'false').returncode == 0
+    assert 'build confirmation' in check('false', 'true', 'false').stderr
+    assert 'release confirmation' in check('true', 'false', 'false').stderr
+    assert check('true', 'true', 'false', source='').returncode != 0
+    assert check('true', 'true', 'false', ref='refs/heads/other').returncode != 0
     publisher = workflow.split('  publisher:', 1)[1]
-    assert 'needs: prepare' in publisher
-    assert "needs.prepare.result == 'success'" in publisher
-    assert "github.event_name == 'schedule'" in publisher
-    assert "github.event_name == 'workflow_dispatch' && inputs.source == ''" in publisher
-    assert 'always()' in publisher
-
-
-def test_publisher_trigger_cases():
-    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/sender-release.yml').read_text()
-    expression = workflow.split('  publisher:', 1)[1].split('if: ${{ ', 1)[1].split(' }}', 1)[0]
-    expression = expression.replace('always()', 'True').replace('!', 'not ').replace('&&', ' and ').replace('||', ' or ')
-    for key, replacement in {'github.ref': 'ref', 'github.event_name': 'event', 'needs.prepare.result': 'result', 'inputs.source': 'source', 'inputs.build_only': 'build_only'}.items():
-        expression = expression.replace(key, replacement)
-    def allowed(event, result, source='', ref='refs/heads/master', build_only=False):
-        return eval(expression, {'__builtins__': {}}, {'ref': ref, 'event': event, 'result': result, 'source': source, 'build_only': build_only})
-    assert allowed('push', 'success')
-    assert not allowed('push', 'failure')
-    assert allowed('schedule', 'skipped')
-    assert allowed('workflow_dispatch', 'skipped')
-    assert allowed('workflow_dispatch', 'success', 'a' * 40)
-    assert not allowed('workflow_dispatch', 'failure', 'a' * 40)
-    assert not allowed('schedule', 'skipped', ref='refs/heads/other')
-    assert not allowed('workflow_dispatch', 'success', 'a' * 40, build_only=True)
-    assert not allowed('workflow_dispatch', 'skipped', build_only=True)
+    expression = publisher.split('if: ${{ ', 1)[1].split(' }}', 1)[0]
+    expression = expression.replace('needs.prepare.result', 'result').replace('inputs.confirm_publish', 'publish').replace('inputs.build_only', 'only').replace('&&', ' and ').replace('!', 'not ')
+    for result in ('success', 'failure', 'skipped'):
+        for publish in (False, True):
+            for only in (False, True):
+                assert eval(expression, {'__builtins__': {}}, dict(result=result, publish=publish, only=only)) == (result == 'success' and publish and not only)
+    assert 'needs: authorization' in workflow
 
 
 def test_bullseye_builder_uses_archived_security_repository():
@@ -144,16 +139,6 @@ def test_linux_compiled_failure_integration_uses_candidate_and_enforces_skips():
         assert 'continue-on-error:' not in step
 
 
-def test_scheduled_recovery_reads_fresh_master_without_replacing_controller():
-    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/sender-release.yml').read_text()
-    recovery = workflow.split('  recover:', 1)[1].split('  # A scheduled', 1)[0]
-    assert 'ref: master' in recovery
-    assert 'path: recovery-master' in recovery
-    assert 'git -C recovery-master rev-parse HEAD' in recovery
-    assert 'scripts/release_controller.py recover --repo recovery-master' in recovery
-    assert 'persist-credentials: false' in recovery
-
-
 def test_source_checks_have_one_pr_and_master_path_and_keep_native_windows():
     root = Path(__file__).resolve().parents[1]
     ci = (root / '.github/workflows/ci.yml').read_text()
@@ -186,10 +171,10 @@ def test_missing_publisher_credential_gates_builds_and_checks():
 
 def test_manual_build_only_skips_publisher_environment_and_public_preparation():
     workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/sender-release.yml').read_text()
-    inputs = workflow.split('  workflow_dispatch:', 1)[1].split('  schedule:', 1)[0]
-    assert 'build_only:' in inputs and 'type: boolean' in inputs and 'default: false' in inputs
+    inputs = workflow.split('  workflow_dispatch:', 1)[1].split('permissions:', 1)[0]
+    assert 'build_only:' in inputs and 'type: boolean' in inputs and 'default: true' in inputs
     preflight = workflow.split('  preflight:', 1)[1].split('  checks:', 1)[0]
-    prepare = workflow.split('  prepare:', 1)[1].split('  recover:', 1)[0]
+    prepare = workflow.split('  prepare:', 1)[1].split('  publisher:', 1)[0]
     guard = "if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.build_only) }}"
     assert guard in preflight and guard in prepare
     for name in ('linux-build', 'windows-build'):
@@ -212,8 +197,7 @@ def test_manual_build_only_skips_publisher_environment_and_public_preparation():
         assert not allowed('workflow_dispatch', True, 'failure')
         assert not allowed('workflow_dispatch', True, 'skipped', version='failure')
     version = workflow.split('  version:', 1)[1].split('  preflight:', 1)[0]
-    assert "github.ref == 'refs/heads/master'" in version
-    assert "inputs.source != ''" in version
+    assert 'needs: authorization' in version
     assert 'scripts/release_version.py --master "$MASTER" "$SOURCE"' in version
     assert 'needs: [version, checks, linux-build, windows-build]' in prepare
 
@@ -295,7 +279,7 @@ def test_reusable_flow_failure_blocks_every_full_check_and_release_preparation()
     assert 'needs: [version, checks, linux-build, windows-build]' in prepare
     assert 'always()' not in prepare
     publisher = workflow.split('  publisher:', 1)[1]
-    assert 'needs: prepare' in publisher
+    assert 'needs: [version, prepare]' in publisher
     # Source-bound publication requires prepare success; drains recover previously validated READY drafts.
     assert "needs.prepare.result == 'success'" in publisher
 

@@ -1,0 +1,18 @@
+{
+  "feature": "sender.source-lifecycle",
+  "fingerprint": "ac0469cd41b004e65bcd07a0b78b7bf7d752067b31fbf6dddbf2d9d4d02145c1",
+  "reviewer": "independent Codex subagent /root/review_portable_unpack",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "針對 來源安裝入口與固定版本來源流程，本人獨立審查文件差異及修正；詳細結果 .audit/rename-docs-independent-review.md，pc 文件 patch SHA-256 7a3d411c78a321ef1977edddb6a8f7783727e8b4816a991a20749ceaf4c4ce0e。",
+    "以 1510b1bd15bf07f3eb6102dd3b55574bba5da8d4 為基準核對隔離快照全部 400 個追蹤 blob；僅已審文件及 flow-manifest 快照雜湊有差異，source、flows、contracts 和政策均不變。",
+    "逐份比較快照文件與本人已審套用結果完全相同；manifest 除 md5 快照外沒有變更。",
+    "沿用基準既有完整獨立審查，feature sender.source-lifecycle、原指紋 ad3152f914ac350189453c965dc4fdba253970c5ad081118f80f4260e70671a9、審查者 independent Codex subagent /root/review_portable_unpack；本人沒有重做未變產品語意審查。",
+    "機械重綁：實際合併基準 ed06ce7306ca27ee07f309a6164ba254295b1efe 與已審基準 1510b1bd15bf07f3eb6102dd3b55574bba5da8d4 的 tree 均為 b944080e81cc99830646e1707b19f60a37f5981d；實際文件、manifest 與先前審查物件逐位元組相同，僅比較基準 SHA 使指紋變更。原判定 .audit/rename-docs-flow-reviews/pc/sender.source-lifecycle/1979881af94b1036a5ed7a151f2b13944f3053e7993dce347192c2e9e4f044f1.json 保留。"
+  ],
+  "limitations": [
+    "這是改名後文件與既有已審基準的綁定，不證明新 GitHub 名稱、正式發布或設備安裝已驗證；實際提交須重新核對指紋、執行 checker 與必要 CI。",
+    "本紀錄只綁定目前已核對的文件快照與合併基準；實際候選匯入後須重新執行 checker。"
+  ]
+}

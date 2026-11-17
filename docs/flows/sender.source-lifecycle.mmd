@@ -3,22 +3,22 @@ flowchart TD
     B{"Windows or Linux/PVE"}
     C["Check privileged platform, trusted paths and prior installation"]
     D["Resolve master to one full commit through API or Git references on API failure; download source and validator for that commit"]
-    E["Reject unsafe archive paths, links, duplicate entries and excessive sizes"]
+    E["Require the pinned commit under the exact old or renamed repository root; reject mixed roots, unsafe paths, links, duplicates and excessive sizes"]
     W{"Windows installation already exists?"}
     X["Acquire existing installation lock before download"]
     Y["Create protected installation directory and acquire lock"]
-    F["Linux/PVE: identify target, create trusted root and acquire lock; prepare prerequisites"]
+    F["Linux/PVE: identify target; recognize root-owned legacy source as replaceable data, verify stable paths and confirm writable root on terminal; restrict only root directory, acquire lock and prepare prerequisites"]
     H{"Linux Docker or native PVE"}
-    K["Check Docker conflicts and prepare PVE API configuration"]
+    K["Check Docker conflicts and prepare local PVE identity"]
     R["Check previous service or container; pin recognized previous Docker image when present"]
     G["Preserve protected MQTT settings or prompt and create private settings"]
     I["Stage source inputs and preserve previous inputs"]
     J["Reject conflicting Compose overrides; build and start Python Docker sender"]
-    L["Preserve PVE service and runtime; install Python sender; require expected command and stable PID"]
+    L["Preserve PVE units, snapshot and runtime; install local adapter and Python sender; require expected command and stable PID"]
     M["Preserve recognized Windows task, source and runtime; install Python, reuse hardware dependencies or download pinned defaults via GitHub asset API or release URL and verify SHA-256"]
     N["Start scheduled task and require it remains running"]
     O["Commit source marker after stable activation; remove recovery data where possible"]
-    P["On failure restore prior inputs and service or task; retain private backup if recovery fails; retain private PVE installer error log"]
+    P["On failure attempt to restore prior inputs, PVE units, snapshot and service or task; retain private backup if recovery fails"]
     Q["Unknown installation, unsafe path, invalid archive or unavailable prerequisite stops the operation"]
     A --> B
     B -->|Windows| C

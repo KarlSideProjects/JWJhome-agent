@@ -1,0 +1,13 @@
+{
+  "feature": "sender.distribution",
+  "fingerprint": "164f8114bf819ebafbd6cfea4ec9eeea3937c83835a99c5b7da27df562ea07a4",
+  "reviewer": "independent Orca reviewer orca_session_id:8a910cca-cfdb-42e7-a15e-296845436bbd",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "公開安裝文件增加來源安裝權限確認說明；編譯發行的程式、校驗及來源信任邊界未變。",
+    "依 dc75fb77802c60183429783041a72d1e3f1080c9 比較；沿用前次親讀的直接上下文與五項流程，本次只複核已證實缺陷及直接回歸，未重審未變 build/release 全碼。v2 候選 21 項凍結雜湊於複核前後一致。",
+    "獨立執行 uv run --locked pytest -q tests/test_source_bootstrap.py：66 passed；離線 root/PTY 真實 bootstrap fixture 20 案及巢狀替換 6 案通過。測試保留父目錄、設定和替換目標權限；原始路徑與 fd inode 由程式前後核對，測試未逐項量測所有 inode。",
+    "容器以離線 archive 與 installer stub 模擬，非真實 PVE 或 systemd；未親跑完整 make check、GitHub CI 或實機驗收。"
+  ]
+}

@@ -102,6 +102,7 @@ root = Path(os.environ['TEST_ROOT'])
 (root / 'payload-pid').write_text(str(os.getpgrp()))
 pve.APP_ROOT = str(root / 'app')
 pve.SYSTEMD_DIR = str(root / 'units')
+pve._validate_trusted_path = lambda path: None
 pve.__compiled__ = True
 pve.readiness = lambda *args: None
 install.detect_target = lambda: Target('linux', 'pve', 'native', 'fixture', 'debian', ())
@@ -125,12 +126,12 @@ with install.cancellation_channel():
     wrapper = tmp_path / 'wrapper.sh'
     wrapper.write_text('set -euo pipefail\nroot="$TEST_ROOT"\nscratch="$TEST_SCRATCH"\ntarget=pve\npve_config="$root/config"\nexec 9>"$root/lock"\nflock 9\n' + body + '\n')
     env = {**os.environ, 'TEST_ROOT': str(root), 'TEST_SCRATCH': str(scratch), 'PYTHONPATH': os.pathsep.join(filter(None, [str(BOOTSTRAP.parent), os.environ.get('PYTHONPATH')]))}
-    process = subprocess.Popen(['bash', str(wrapper)], env=env, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    process = subprocess.Popen(['bash', str(wrapper)], env=env, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
     try:
         deadline = time.monotonic() + 15
         while not (root / 'ready').exists() and process.poll() is None and time.monotonic() < deadline:
             time.sleep(.02)
-        assert (root / 'ready').exists()
+        assert (root / 'ready').exists(), (process.poll(), process.stderr.read() if process.poll() is not None else 'still running')
         os.killpg(process.pid, signal.SIGINT)
         deadline = time.monotonic() + 5
         while not (root / 'recovering').exists() and process.poll() is None and time.monotonic() < deadline:

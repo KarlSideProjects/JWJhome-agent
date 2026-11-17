@@ -1,6 +1,7 @@
 """Native systemd installation for a detected PVE host."""
 
 import argparse
+import grp
 import os
 from pathlib import Path
 import shutil
@@ -14,11 +15,65 @@ from hwmonitor_mqtt.clients.pve import PveApiClient, PveConfig, PveError
 
 
 SERVICE_NAME = "hwmonitor-mqtt-pve.service"
+SNAPSHOT_SERVICE = "hwmonitor-mqtt-pve-snapshot.service"
+SNAPSHOT_TIMER = "hwmonitor-mqtt-pve-snapshot.timer"
+READER_GROUP = "hwmonitor-mqtt-pve-readers"
+SNAPSHOT_PATH = "/run/hwmonitor-mqtt-pve/snapshot.json"
 DEFAULT_CONFIG = "/etc/hwmonitor-mqtt/pve.env"
 INSTALL_ROOT = "/opt/hwmonitor-mqtt-pve"
 APP_ROOT = f"{INSTALL_ROOT}/app"
 SERVICE_VENV = f"{INSTALL_ROOT}/venv"
 SYSTEMD_DIR = "/etc/systemd/system"
+
+
+def _validate_trusted_path(path):
+    path = Path(path)
+    if not path.is_absolute() or ".." in path.parts:
+        raise RuntimeError("untrusted PVE installation path")
+    fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        for part in path.parts[1:]:
+            info = os.fstat(fd)
+            if info.st_uid != 0 or info.st_mode & 0o022 or not stat.S_ISDIR(info.st_mode):
+                raise RuntimeError("untrusted PVE installation path")
+            try:
+                next_fd = os.open(part, os.O_PATH | os.O_NOFOLLOW, dir_fd=fd)
+            except FileNotFoundError:
+                return
+            os.close(fd)
+            fd = next_fd
+            info = os.fstat(fd)
+            if info.st_uid != 0 or info.st_mode & 0o022 or stat.S_ISLNK(info.st_mode):
+                raise RuntimeError("untrusted PVE installation path")
+    finally:
+        os.close(fd)
+
+
+def _validate_trusted_tree(root):
+    root = Path(root)
+    _validate_trusted_path(root)
+    if not root.exists():
+        return
+    for directory, subdirs, files in os.walk(root, followlinks=False):
+        for name in subdirs + files:
+            path = Path(directory) / name
+            if path.is_symlink():
+                info = path.lstat()
+                if info.st_uid != 0:
+                    raise RuntimeError("untrusted PVE installation link")
+                target = path.resolve(strict=True)
+                _validate_trusted_path(target)
+            else:
+                _validate_trusted_path(path)
+
+
+def _validate_executable(path):
+    path = Path(path)
+    _validate_trusted_path(path.parent)
+    target = path.resolve(strict=True)
+    _validate_trusted_path(target)
+    if not target.is_file() or not os.access(target, os.X_OK):
+        raise RuntimeError("untrusted PVE executable")
 
 
 def command(project_root, config_file=DEFAULT_CONFIG):
@@ -45,12 +100,133 @@ def unit_text(project_root, python=f"{SERVICE_VENV}/bin/python", config_file=DEF
     root = Path(project_root).resolve()
     config_file = Path(config_file).resolve()
     return ("[Unit]\nDescription=Hardware Monitor MQTT sender for Proxmox VE\nAfter=network-online.target\nWants=network-online.target\n\n"
-            "[Service]\nType=simple\nDynamicUser=yes\nWorkingDirectory=" + _unit_escape(APP_ROOT) + "\n"
+            "[Service]\nType=simple\nDynamicUser=yes\n" + ("" if compiled else "SupplementaryGroups=" + READER_GROUP + "\nEnvironment=PVE_LOCAL_SNAPSHOT=" + SNAPSHOT_PATH + "\n") + "WorkingDirectory=" + _unit_escape(APP_ROOT) + "\n"
             "EnvironmentFile=-" + _unit_escape(root / ".env") + "\nEnvironmentFile=-" + _unit_escape(config_file) + "\n"
             "Environment=PVE_ENABLED=1\nEnvironment=PVE_CONFIG_LOADED=1\nEnvironment=PVE_ENV_PRELOADED=1\n"
             "Environment=PVE_CONFIG_FILE=" + _unit_escape(config_file) + "\nEnvironment=SENDER_PROFILE=full\n"
             + ("Environment=PYTHONIOENCODING=utf-8\n" if compiled else "") + "ExecStart=" + _unit_escape(python) + ("\n" if compiled else " -m hwmonitor_mqtt.agents.agent_sender_async\n")
             + "Restart=on-failure\nRestartSec=5\n\n[Install]\nWantedBy=multi-user.target\n")
+
+
+def snapshot_unit_text(python=f"{SERVICE_VENV}/bin/python"):
+    return ("[Unit]\nDescription=Collect local PVE snapshot\n\n[Service]\nType=oneshot\n"
+            "User=root\nGroup=" + READER_GROUP + "\nRuntimeDirectory=hwmonitor-mqtt-pve\n"
+            "RuntimeDirectoryMode=0750\nRuntimeDirectoryPreserve=yes\nWorkingDirectory=" + _unit_escape(APP_ROOT)
+            + "\nExecStart=!" + _unit_escape(python) + " -E -s -m hwmonitor_mqtt.platforms.pve_snapshot\n")
+
+
+def snapshot_timer_text():
+    return ("[Unit]\nDescription=Refresh local PVE snapshot\n\n[Timer]\n"
+            "OnBootSec=15s\nOnUnitInactiveSec=30s\nUnit=" + SNAPSHOT_SERVICE
+            + "\n\n[Install]\nWantedBy=timers.target\n")
+
+
+def local_readiness(config_file=DEFAULT_CONFIG):
+    from hwmonitor_mqtt.platforms.pve_bootstrap import PveSetupError, _read_values
+    try:
+        values = _read_values(Path(config_file))
+        import re
+        if any(not re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", values.get(key, ""))
+               for key in ("PVE_NODE", "PVE_CLUSTER_ID")):
+            return "PVE local identity is unconfigured"
+        import socket
+        if values["PVE_NODE"] != socket.gethostname().split(".", 1)[0]:
+            return "PVE_NODE differs from the local node; correct PVE_NODE before installation"
+        return None
+    except (OSError, ValueError, PveSetupError):
+        return "PVE local identity is unreadable"
+
+
+def _ensure_reader_group(run):
+    try:
+        grp.getgrnam(READER_GROUP)
+    except KeyError:
+        if run(["/usr/sbin/groupadd", "--system", READER_GROUP], check=False).returncode:
+            raise RuntimeError("cannot create PVE reader group")
+
+
+def _verify_snapshot(config_file):
+    from hwmonitor_mqtt.clients.pve_snapshot import LocalPveConfig, PveSnapshotClient
+    from hwmonitor_mqtt.platforms.pve_bootstrap import _read_values
+    values = _read_values(Path(config_file))
+    client = PveSnapshotClient(LocalPveConfig(values["PVE_CLUSTER_ID"], values["PVE_NODE"]), SNAPSHOT_PATH)
+    client.resources()
+    client.disks_list()
+
+
+def _activate_local(project_root, python, config_file, systemctl, run):
+    _ensure_reader_group(run)
+    directory = Path(SYSTEMD_DIR)
+    directory.mkdir(parents=True, exist_ok=True)
+    units = {SERVICE_NAME: unit_text(project_root, python, config_file),
+             SNAPSHOT_SERVICE: snapshot_unit_text(python), SNAPSHOT_TIMER: snapshot_timer_text()}
+    previous = {}
+    for name in units:
+        path = directory / name
+        _validate_trusted_path(path)
+        if path.is_symlink() or path.exists() and not path.is_file():
+            raise RuntimeError("untrusted systemd unit")
+        previous[name] = path.read_bytes() if path.exists() else None
+    def state(name):
+        if previous[name] is None:
+            return False, False
+        active = run([systemctl, "is-active", "--quiet", name], check=False).returncode
+        enabled = run([systemctl, "is-enabled", "--quiet", name], check=False).returncode
+        if active not in (0, 3) or enabled not in (0, 1):
+            raise RuntimeError("cannot determine previous PVE service state")
+        return active == 0, enabled == 0
+
+    timer_active, timer_enabled = state(SNAPSHOT_TIMER)
+    sender_active, sender_enabled = state(SERVICE_NAME)
+    sender_touched = timer_touched = False
+    phase = "unit preparation"
+    try:
+        if timer_active and run([systemctl, "stop", SNAPSHOT_TIMER], check=False).returncode:
+            raise RuntimeError("cannot stop PVE snapshot timer")
+        for name, content in units.items():
+            (directory / name).write_text(content)
+        for args in ([systemctl, "daemon-reload"], [systemctl, "start", SNAPSHOT_SERVICE]):
+            phase = "systemd reload" if args[1] == "daemon-reload" else "snapshot collection"
+            if run(args, check=False).returncode:
+                raise RuntimeError("PVE snapshot startup failed")
+        phase = "snapshot verification"
+        _verify_snapshot(config_file)
+        for args in ([systemctl, "enable", "--now", SNAPSHOT_TIMER],
+                     [systemctl, "enable", SERVICE_NAME], [systemctl, "restart", SERVICE_NAME],
+                     [systemctl, "is-active", "--quiet", SERVICE_NAME]):
+            phase = "snapshot timer" if args[-1] == SNAPSHOT_TIMER else "sender activation"
+            if args[-1] == SNAPSHOT_TIMER:
+                timer_touched = True
+            if args[1] in ("enable", "restart") and args[-1] == SERVICE_NAME:
+                sender_touched = True
+            if run(args, check=False).returncode:
+                raise RuntimeError("PVE sender startup failed")
+        return 0
+    except (OSError, RuntimeError, PveError, KeyError, ValueError) as error:
+        code = str(error) if isinstance(error, PveError) and str(error) in {"invalid_config", "invalid_snapshot", "collection_failed"} else "operation_failed"
+        print(f"PVE installation failed at {phase}: {code}", file=sys.stderr)
+        checks = []
+        for name, touched in ((SNAPSHOT_TIMER, timer_touched), (SERVICE_NAME, sender_touched)):
+            if touched and previous[name] is None:
+                checks.append(run([systemctl, "disable", "--now", name], check=False).returncode)
+        for name, content in previous.items():
+            path = directory / name
+            if content is None:
+                path.unlink(missing_ok=True)
+            else:
+                path.write_bytes(content)
+        checks.append(run([systemctl, "daemon-reload"], check=False).returncode)
+        restore = []
+        if previous[SNAPSHOT_TIMER] is not None and (timer_touched or timer_active):
+            restore.append((SNAPSHOT_TIMER, timer_active, timer_enabled))
+        if sender_touched and previous[SERVICE_NAME] is not None:
+            restore.append((SERVICE_NAME, sender_active, sender_enabled))
+        for name, active, enabled in restore:
+            checks.append(run([systemctl, "enable" if enabled else "disable", name], check=False).returncode)
+            checks.append(run([systemctl, "restart" if active else "stop", name], check=False).returncode)
+        if any(checks):
+            raise RuntimeError("PVE service recovery failed")
+        return 1
 
 
 def _normalize_tree_permissions(root):
@@ -88,11 +264,27 @@ def install(project_root, config_file=DEFAULT_CONFIG, run=subprocess.run, which=
         raise RuntimeError("python3 is unavailable")
     if geteuid() != 0:
         raise RuntimeError("run the native PVE installer with sudo")
-    validation = readiness(config_file)
+    _validate_executable(systemctl)
+    if not compiled:
+        _validate_executable(python3)
+    for path in (Path(project_root), Path(APP_ROOT).parent, Path(APP_ROOT), Path(SERVICE_VENV), Path(SYSTEMD_DIR)):
+        _validate_trusted_path(path)
+    if not compiled:
+        _validate_trusted_tree(Path(project_root) / "hwmonitor_mqtt")
+    if not compiled and (Path(APP_ROOT).exists() or Path(SERVICE_VENV).exists()):
+        raise RuntimeError("existing PVE runtime requires source upgrade")
+    if not compiled:
+        from hwmonitor_mqtt.platforms.pve_bootstrap import PveSetupError, prepare_local
+        try:
+            prepare_local(config_file)
+        except PveSetupError as error:
+            raise RuntimeError(str(error)) from None
+    validation = readiness(config_file) if compiled else local_readiness(config_file)
     if validation and validation != "PVE configuration is unconfigured":
         raise RuntimeError(validation)
     docker = which("docker")
     if docker:
+        _validate_executable(docker)
         existing = run([docker, "inspect", "sys-agent"], check=False, capture_output=True, text=True)
         if existing.returncode == 0:
             raise RuntimeError("sys-agent container exists; stop/remove it before installing the native PVE sender")
@@ -111,22 +303,13 @@ def install(project_root, config_file=DEFAULT_CONFIG, run=subprocess.run, which=
     shutil.copytree(source, package, dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     _normalize_tree_permissions(app)
     venv_python = Path(SERVICE_VENV) / "bin" / "python"
-    for args in ([python3, "-m", "venv", SERVICE_VENV],
-                 [str(venv_python), "-m", "pip", "install", "psutil>=7", "paho-mqtt>=2.1", "python-dotenv>=1.1"]):
-        result = run(args, check=False)
+    for args in ([python3, "-I", "-m", "venv", SERVICE_VENV],
+                 [str(venv_python), "-I", "-m", "pip", "install", "psutil>=7", "paho-mqtt>=2.1", "python-dotenv>=1.1"]):
+        result = run(args, check=False, env={"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8", "HOME": "/root"})
         if result.returncode:
             return result.returncode
     _normalize_tree_permissions(Path(SERVICE_VENV))
-    unit = Path(SYSTEMD_DIR) / SERVICE_NAME
-    unit.parent.mkdir(parents=True, exist_ok=True)
-    unit.write_text(unit_text(project_root, str(venv_python), config_file))
-    for args in ([systemctl, "daemon-reload"], [systemctl, "enable", "--now", SERVICE_NAME],
-                 [systemctl, "restart", SERVICE_NAME]):
-        result = run(args, check=False)
-        if result.returncode:
-            return result.returncode
-    result = run([systemctl, "is-active", "--quiet", SERVICE_NAME], check=False)
-    return result.returncode
+    return _activate_local(project_root, str(venv_python), config_file, systemctl, run)
 
 
 
@@ -141,6 +324,7 @@ def install_compiled(project_root, config_file, systemctl, run):
     app.chmod(0o755)
     unit.parent.mkdir(parents=True, exist_ok=True)
     target = app / "sender"
+    _validate_trusted_path(target)
     if target.is_symlink():
         raise RuntimeError("sender executable must not be a symbolic link")
     existed = unit.exists()

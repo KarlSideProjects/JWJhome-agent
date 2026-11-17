@@ -1,0 +1,13 @@
+{
+  "feature": "sender.distribution",
+  "fingerprint": "79017e8268a0230bf357ae7dcdff068fcf21cf4de9eff37b5dab8162c05f014d",
+  "reviewer": "independent Orca reviewer orca_session_id:68e0ef12-e539-4688-8d50-db8320a25353",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "安裝說明新增內容描述來源安裝；編譯發布、下載和安裝的直接程式未變，沒有發現此範圍回歸。",
+    "比較基準 0914678aab9327973918028ed1ab5d9ed73a49f2，候選 worktree；本次 packet 與前批已審候選直接輸入雜湊比對，改變的路徑：docs/deployment/installation.md；其餘直接輸入雜湊一致，沿用前批審查上下文。範圍、限制及全域政策皆未變。",
+    "本審查者親跑 .venv/bin/python -m pytest -q tests/test_source_bootstrap.py：67 passed；以 python:3.11-slim-bullseye 無網路 root 容器重跑 legacy-layout-proof/root-test.py：23 案通過，包括 legacy file/pipe、拒絕、原始及替換 symlink、env 保存和舊 poison 不執行。",
+    "容器使用離線 archive、實際 source_linux_install/source_deploy/source_config 與 PVE activation 替身；不證明真實 PVE 或 systemd。未親跑完整 make check 或 GitHub CI。"
+  ]
+}

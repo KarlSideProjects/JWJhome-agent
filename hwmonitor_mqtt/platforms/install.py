@@ -108,7 +108,8 @@ def main(argv=None):
     if deployment == "docker" and target.os == "linux":
         requirement_error = linux_installer.preflight()
     if target.system == "pve":
-        requirement_error = requirement_error or pve_installer.readiness(args.pve_config)
+        requirement_error = requirement_error or (pve_installer.readiness(args.pve_config) if deployment == "docker" or "__compiled__" in vars(pve_installer)
+                                                  else pve_installer.local_readiness(args.pve_config))
     result = {
         "role": args.role,
         "target": {**target.__dict__, "evidence": list(target.evidence)},

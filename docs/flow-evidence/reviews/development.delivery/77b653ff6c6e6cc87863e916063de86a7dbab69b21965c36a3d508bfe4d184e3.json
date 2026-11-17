@@ -1,0 +1,12 @@
+{
+  "feature": "development.delivery",
+  "fingerprint": "77b653ff6c6e6cc87863e916063de86a7dbab69b21965c36a3d508bfe4d184e3",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "CI 配置及必要檢查沒有本次差異；共同契約改述 PVE snapshot 權限，未變更交付政策。",
+    "審查 fb052ea 至 cd6b828 的十二檔差異；未變範圍沿用 docs/flow-evidence/reviews/development.delivery/31e136af2eb0d8e3ce5d3401c680a6e8bedb0d0696b3256bd66dd721b77194ec.json 的獨立審查，並未冒稱本人重審全部原始碼。",
+    "四組相關測試 88 passed；PVE 真機紀錄由主端提供，本次未操作實機。GitHub 必要檢查與原生 smoke 尚待執行。"
+  ]
+}

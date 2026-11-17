@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+for python_var in ${!PYTHON@}; do
+    unset "$python_var"
+done
+export PYTHONNOUSERSITE=1
+
+pinned_commit=
+if (( $# )); then
+    [[ $# == 2 && $1 == --commit && $2 =~ ^[0-9a-f]{40}$ ]] || {
+        echo 'Invalid source commit; expected --commit followed by 40 lowercase hexadecimal characters.' >&2
+        exit 1
+    }
+    pinned_commit=$2
+fi
+
 # Begin prerequisites
 ensure_source_prerequisites() {
     local target=$1 distro=$2 codename=$3 scratch=$4 status installed
@@ -84,7 +98,7 @@ if ! command -v python3 >/dev/null 2>&1; then
     apt-get update || echo 'Warning: using existing APT metadata.' >&2
     DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-venv
 fi
-python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || {
+python3 -I -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || {
     echo 'Python 3.11 or newer is required.' >&2; exit 1;
 }
 [[ "$root" == /* ]] || { echo 'Installation path must be absolute.' >&2; exit 1; }
@@ -117,15 +131,17 @@ fi
 
 tmp=$(mktemp -d)
 trap 'rm -rf -- "$tmp"' EXIT
-if curl --fail --location --silent --show-error \
+if [[ -n $pinned_commit ]]; then
+    commit=$pinned_commit
+elif curl --fail --location --silent --show-error \
     https://api.github.com/repos/KarlSideProjects/hwmonitor-mqtt/commits/master \
     --output "$tmp/commit.json"; then
-    commit=$(python3 -c 'import json,re,sys; s=json.load(open(sys.argv[1])).get("sha", ""); sys.exit("Invalid source commit") if not isinstance(s, str) or not re.fullmatch("[0-9a-f]{40}", s) else print(s)' "$tmp/commit.json")
+    commit=$(python3 -I -c 'import json,re,sys; s=json.load(open(sys.argv[1])).get("sha", ""); sys.exit("Invalid source commit") if not isinstance(s, str) or not re.fullmatch("[0-9a-f]{40}", s) else print(s)' "$tmp/commit.json")
 else
     curl --fail --location --silent --show-error --max-filesize 10485760 \
         'https://github.com/KarlSideProjects/hwmonitor-mqtt.git/info/refs?service=git-upload-pack' \
         --output "$tmp/refs"
-    commit=$(python3 - "$tmp/refs" <<'PY'
+    commit=$(python3 -I - "$tmp/refs" <<'PY'
 import pathlib, re, sys
 b = pathlib.Path(sys.argv[1]).read_bytes()
 packets, pos = [], 0
@@ -155,11 +171,11 @@ curl --fail --location --silent --show-error \
 curl --fail --location --silent --show-error \
     "https://github.com/KarlSideProjects/hwmonitor-mqtt/archive/$commit.tar.gz" \
     --output "$tmp/source.tar.gz"
-source_dir=$(python3 "$tmp/source_archive.py" "$tmp/source.tar.gz" "$tmp/unpacked")
-[[ "$source_dir" == "$tmp/unpacked/hwmonitor-mqtt-$commit" && -f "$source_dir/scripts/source_linux_install.py" ]] || {
+source_dir=$(python3 -I "$tmp/source_archive.py" "$tmp/source.tar.gz" "$tmp/unpacked")
+[[ ( "$source_dir" == "$tmp/unpacked/hwmonitor-mqtt-$commit" || "$source_dir" == "$tmp/unpacked/JWJhome-agent-$commit" ) && -f "$source_dir/scripts/source_linux_install.py" ]] || {
     echo 'Downloaded source identity is invalid.' >&2; exit 1;
 }
-target=$(cd "$source_dir" && PYTHONPATH="$source_dir" python3 -c 'from hwmonitor_mqtt.platforms.detect import detect_target; t=detect_target(); print(t.system if t.system == "pve" or (t.system == "linux" and t.distribution in ("debian", "ubuntu", "raspbian")) else "unsupported")')
+target=$(cd "$source_dir" && python3 -I -c 'import sys; sys.path.insert(0, sys.argv[1]); from hwmonitor_mqtt.platforms.detect import detect_target; t=detect_target(); print(t.system if t.system == "pve" or (t.system == "linux" and t.distribution in ("debian", "ubuntu", "raspbian")) else "unsupported")' "$source_dir")
 [[ $target == linux || $target == pve ]] || { echo 'Unsupported or unrecognized host.' >&2; exit 1; }
 [[ $target != pve || $machine == x86_64 ]] || { echo 'PVE requires x64.' >&2; exit 1; }
 if [[ ! -e "$root" ]]; then
@@ -168,7 +184,102 @@ if [[ ! -e "$root" ]]; then
 fi
 [[ ! -L "$root" && -d "$root" && $(stat -c %u "$root") == 0 ]] || { echo 'Untrusted installation directory.' >&2; exit 1; }
 root_mode=$(stat -c %a "$root")
-(( (8#$root_mode & 8#022) == 0 )) || { echo 'Installation directory must not be writable by others.' >&2; exit 1; }
+if (( (8#$root_mode & 8#022) != 0 )); then
+    python3 -I - "$root" <<'PY_CONFIRM' || exit 1
+import os, stat, sys
+
+path = sys.argv[1]
+def fail(message):
+    sys.exit(message)
+
+try:
+    fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    before = os.fstat(fd)
+    if before.st_uid != 0:
+        fail('Untrusted installation directory.')
+    def regular(name, directory=fd, writable=False):
+        try:
+            info = os.stat(name, dir_fd=directory, follow_symlinks=False)
+            return stat.S_ISREG(info.st_mode) and info.st_uid == 0 and not info.st_mode & (0o002 if writable else 0o022)
+        except FileNotFoundError:
+            return False
+    def is_link(name):
+        try:
+            return stat.S_ISLNK(os.stat(name, dir_fd=fd, follow_symlinks=False).st_mode)
+        except FileNotFoundError:
+            return False
+    source_identity = None
+    def source_paths(writable):
+        opened = []
+        identity = []
+        try:
+            parent = fd
+            for name in ('hwmonitor_mqtt', 'platforms'):
+                try:
+                    child = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+                except FileNotFoundError:
+                    return True, False, tuple(identity)
+                opened.append(child)
+                info = os.fstat(child)
+                if info.st_uid != 0 or info.st_mode & (0o002 if writable else 0o022):
+                    return False, False, ()
+                identity.append((info.st_dev, info.st_ino, info.st_mode))
+                parent = child
+            installer = regular('install.py', parent, writable)
+            if installer:
+                info = os.stat('install.py', dir_fd=parent, follow_symlinks=False)
+                identity.append((info.st_dev, info.st_ino, info.st_mode))
+            return True, installer, tuple(identity)
+        except OSError:
+            return False, False, ()
+        finally:
+            for child in reversed(opened):
+                os.close(child)
+    def recognized():
+        global source_identity
+        legacy = not any(os.path.lexists(os.path.join(path, name)) for name in
+                         ('.hwmonitor-mqtt-bootstrap-pending', 'sender'))
+        safe_source, source_installer, identity = source_paths(legacy)
+        if source_identity is None:
+            source_identity = identity
+        return (safe_source and identity == source_identity and
+                not any(is_link(name) for name in ('.env', 'hwmonitor_mqtt', '.hwmonitor-mqtt-bootstrap', '.hwmonitor-mqtt-bootstrap-pending'))
+                and (regular('.hwmonitor-mqtt-bootstrap-pending') or
+                     (regular('.hwmonitor-mqtt-bootstrap') and (regular('sender') or source_installer))))
+    if not recognized():
+        fail('Untrusted or unrecognized installation directory.')
+    def unchanged():
+        current = os.stat(path, follow_symlinks=False)
+        opened = os.fstat(fd)
+        return (stat.S_ISDIR(current.st_mode) and current.st_dev == before.st_dev and
+                current.st_ino == before.st_ino and opened.st_uid == 0 and
+                opened.st_mode == before.st_mode)
+    if not unchanged():
+        fail('Installation directory changed; refusing to modify it.')
+    mode = stat.S_IMODE(before.st_mode)
+    with open('/dev/tty', 'r', encoding='utf-8') as tty_in, open('/dev/tty', 'w', encoding='utf-8') as tty:
+        tty.write(f'Installation directory: {path}\nPermissions: {mode:04o} -> {mode & ~0o022:04o}\n'
+                  'Remove group and other write access? This restricts who can modify the installation directory.\n')
+        while True:
+            tty.write('Continue? [y/yes/是/要; n/no/否/不要; Enter = no] ')
+            tty.flush()
+            answer = tty_in.readline()
+            if not answer or answer.strip().lower() in ('n', 'no', '否', '不要', ''):
+                fail('Installation directory permissions unchanged.')
+            if answer.strip().lower() in ('y', 'yes', '是', '要'):
+                break
+            tty.write('Please answer yes or no.\n')
+    if not unchanged() or not recognized():
+        fail('Installation directory changed; refusing to modify it.')
+    os.fchmod(fd, mode & ~0o022)
+    after = os.stat(path, follow_symlinks=False)
+    if (not stat.S_ISDIR(after.st_mode) or (after.st_dev, after.st_ino) != (before.st_dev, before.st_ino)
+            or stat.S_IMODE(os.fstat(fd).st_mode) != mode & ~0o022 or not recognized()):
+        fail('Installation directory changed; refusing to continue.')
+except OSError as exc:
+    fail(f'Cannot safely confirm installation directory permissions: {exc}')
+PY_CONFIRM
+fi
 lock="$root/.sender-install.lock"
 [[ ! -L "$lock" && ( ! -e "$lock" || ( -f "$lock" && $(stat -c %u "$lock") == 0 ) ) ]] || {
     echo 'Untrusted installation lock.' >&2; exit 1;
@@ -185,9 +296,9 @@ if [[ $target == pve ]]; then
         fi
     fi
     pve_config=${PVE_CONFIG_FILE:-/etc/hwmonitor-mqtt/pve.env}
-    (cd "$source_dir" && PYTHONPATH="$source_dir" python3 -m hwmonitor_mqtt.platforms.pve_bootstrap \
-        --config "$pve_config" --template "$source_dir/docs/configuration/pve.env.example")
+    (cd "$source_dir" && python3 -I -c 'import runpy,sys; sys.path.insert(0,sys.argv.pop(1)); runpy.run_module("hwmonitor_mqtt.platforms.pve_bootstrap",run_name="__main__",alter_sys=True)' "$source_dir" \
+        --config "$pve_config" --template "$source_dir/docs/configuration/pve.env.example" --local)
 fi
-(cd "$source_dir" && PYTHONPATH="$source_dir" python3 -m scripts.source_linux_install "$source_dir" "$root" "$commit" "$target")
+(cd "$source_dir" && python3 -I -c 'import runpy,sys; sys.path.insert(0,sys.argv.pop(1)); runpy.run_module("scripts.source_linux_install",run_name="__main__",alter_sys=True)' "$source_dir" "$source_dir" "$root" "$commit" "$target")
 rm -f -- "$root/.hwmonitor-mqtt-bootstrap-pending"
 echo "Sender source $commit installed."

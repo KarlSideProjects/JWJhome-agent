@@ -2,9 +2,15 @@
 
 在 Windows／Linux／PVE 電腦採集 CPU、GPU、記憶體、磁碟、網路與溫度，透過 MQTT 傳送監控資料。
 
-**電腦採集端（本專案）** 負責採集及傳送；**[掌機顯示端 MQTT Handheld Hardware Monitor](https://github.com/KarlSideProjects/mqtt-handheld-hardware-monitor)** 安裝在 R36 MAX 2／TrimUI Smart Pro S，負責顯示。兩邊需連到同一個 MQTT broker，並使用相符的主題設定。
+**電腦採集端（本專案）** 負責採集及傳送；**[掌機顯示端 MQTT Handheld Hardware Monitor](https://github.com/KarlSideProjects/JWJhome-handheld)** 安裝在 R36 MAX 2／TrimUI Smart Pro S，負責顯示。兩邊需連到同一個 MQTT broker，並使用相符的主題設定。
 
 電腦採集端 → MQTT broker → 掌機顯示端
+
+## 建置與發布政策
+
+保留現有原始碼開發及安裝。只有使用者明確要求才發起編譯或封裝，正式公開發布需另行明確批准。不得自行設定 Windows、Linux／PVE 或 ARM 設備每次推送自動部署。
+
+目前已發布的 master 推送工作流程尚未符合此政策，見 [#24](https://github.com/KarlSideProjects/JWJhome-agent/issues/24)。修正合併前，master 推送可能觸發編譯與發布。
 
 ## 安裝入口
 
@@ -12,20 +18,20 @@
 | --- | --- | --- |
 | Windows 電腦 | [bootstrap-source.ps1](bootstrap-source.ps1) | [系統管理員 PowerShell 命令](docs/deployment/installation.md#windows-sender-安裝與注意事項) |
 | Linux／PVE 電腦 | [bootstrap-source.sh](bootstrap-source.sh) | [Shell 命令](docs/deployment/installation.md#在-linux-或-pve-安裝-sender) |
-| R36／TrimUI 掌機 | [掌機安裝入口](https://github.com/KarlSideProjects/mqtt-handheld-hardware-monitor#安裝入口) | [掌機安裝步驟](https://github.com/KarlSideProjects/mqtt-handheld-hardware-monitor/blob/main/docs/installation.md#快速安裝) |
+| R36／TrimUI 掌機 | [掌機安裝入口](https://github.com/KarlSideProjects/JWJhome-handheld#安裝入口) | [掌機安裝步驟](https://github.com/KarlSideProjects/JWJhome-handheld/blob/main/docs/installation.md#快速安裝) |
 
 首次安裝會詢問 MQTT 設定，既有設定會保留。PVE 使用原生 systemd 服務；Windows 使用開機排程。完整限制見 [安裝與維護](docs/deployment/installation.md)。
 
 Windows 在系統管理員 PowerShell 貼上一行：
 
 ```powershell
-& ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/KarlSideProjects/hwmonitor-mqtt/master/bootstrap-source.ps1' -ErrorAction Stop).Content))
+& ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/KarlSideProjects/JWJhome-agent/master/bootstrap-source.ps1' -ErrorAction Stop).Content))
 ```
 
 Linux／PVE 在 Shell 貼上一行；非 root 使用者會透過 `sudo` 執行：
 
 ```bash
-(f=$(mktemp) && trap 'rm -f "$f"' EXIT && curl -fsSL 'https://raw.githubusercontent.com/KarlSideProjects/hwmonitor-mqtt/master/bootstrap-source.sh' -o "$f" && if [ "$(id -u)" = 0 ]; then bash "$f"; else sudo bash "$f"; fi)
+(f=$(mktemp) && trap 'rm -f "$f"' EXIT && curl -fsSL 'https://raw.githubusercontent.com/KarlSideProjects/JWJhome-agent/master/bootstrap-source.sh' -o "$f" && if [ "$(id -u)" = 0 ]; then bash "$f"; else sudo bash "$f"; fi)
 ```
 
 ## 詳細文件

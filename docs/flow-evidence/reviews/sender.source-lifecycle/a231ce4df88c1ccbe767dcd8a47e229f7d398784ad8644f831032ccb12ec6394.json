@@ -1,0 +1,13 @@
+{
+  "feature": "sender.source-lifecycle",
+  "fingerprint": "a231ce4df88c1ccbe767dcd8a47e229f7d398784ad8644f831032ccb12ec6394",
+  "reviewer": "independent Orca reviewer orca_session_id:68e0ef12-e539-4688-8d50-db8320a25353",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "下載並驗證來源後從隔離來源執行準備，保留設定，再暫存新來源、移走舊來源、替換後啟動；舊來源是待替換資料。no-follow 與 root 擁有檢查仍在，巢狀身分於確認前後比對，原 symlink 拒絕；測試中舊 poison 未執行、env 保留。",
+    "比較基準 0914678aab9327973918028ed1ab5d9ed73a49f2，候選 worktree；本次 packet 與前批已審候選直接輸入雜湊比對，改變的路徑：bootstrap-source.sh, docs/deployment/installation.md, docs/flows/sender.source-lifecycle.mmd, tests/test_source_bootstrap.py；其餘直接輸入雜湊一致，沿用前批審查上下文。範圍、限制及全域政策皆未變。",
+    "本審查者親跑 .venv/bin/python -m pytest -q tests/test_source_bootstrap.py：67 passed；以 python:3.11-slim-bullseye 無網路 root 容器重跑 legacy-layout-proof/root-test.py：23 案通過，包括 legacy file/pipe、拒絕、原始及替換 symlink、env 保存和舊 poison 不執行。",
+    "容器使用離線 archive、實際 source_linux_install/source_deploy/source_config 與 PVE activation 替身；不證明真實 PVE 或 systemd。未親跑完整 make check 或 GitHub CI。"
+  ]
+}
