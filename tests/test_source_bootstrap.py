@@ -351,3 +351,208 @@ def test_pinned_invalid_commit_rejected_before_download(tmp_path):
     assert result.returncode != 0
     assert 'Invalid source commit' in result.stderr
     assert not (tmp_path / 'contacted').exists()
+
+
+PERMISSION_WRAPPER = '''import os, sys
+from types import SimpleNamespace
+original = os.fstat
+def fstat(fd):
+    result = original(fd)
+    return SimpleNamespace(st_uid=0, st_mode=result.st_mode, st_dev=result.st_dev, st_ino=result.st_ino)
+os.fstat = fstat
+original_stat = os.stat
+def checked_stat(path, *args, **kwargs):
+    result = original_stat(path, *args, **kwargs)
+    if kwargs.get('dir_fd') is not None:
+        return SimpleNamespace(st_uid=0, st_mode=result.st_mode, st_dev=result.st_dev, st_ino=result.st_ino)
+    return result
+os.stat = checked_stat
+exec(sys.argv.pop(1))
+'''
+
+
+@pytest.mark.parametrize(('answer', 'expected_mode'), [('y\n', 0o755), ('是\n', 0o755), ('要\n', 0o755), ('bad\nyes\n', 0o755), ('no\n', 0o775), ('否\n', 0o775), ('不要\n', 0o775), ('\n', 0o775), ('\x04', 0o775)])
+def test_permission_confirmation_uses_controlling_terminal(tmp_path, answer, expected_mode):
+    import pty
+    import select
+
+    root = tmp_path / 'root'
+    root.mkdir(mode=0o775)
+    root.chmod(0o775)
+    (root / '.hwmonitor-mqtt-bootstrap').touch()
+    (root / 'sender').touch()
+    (root / '.hwmonitor-mqtt-bootstrap').chmod(0o644)
+    (root / 'sender').chmod(0o644)
+    settings = root / '.env'
+    settings.write_text('keep')
+    settings.chmod(0o600)
+    script = BOOTSTRAP.read_text().split("<<'PY_CONFIRM' || exit 1\n", 1)[1].split('\nPY_CONFIRM', 1)[0]
+    wrapper = PERMISSION_WRAPPER
+    pid, terminal = pty.fork()
+    if pid == 0:
+        os.execv(sys.executable, [sys.executable, '-I', '-c', wrapper, script, str(root)])
+    output = b''
+    try:
+        while b'Enter = no]' not in output:
+            assert select.select([terminal], [], [], 5)[0], output
+            try:
+                output += os.read(terminal, 4096)
+            except OSError:
+                pytest.fail(repr(output))
+        os.write(terminal, answer.encode())
+        _, status = os.waitpid(pid, 0)
+    finally:
+        os.close(terminal)
+    assert os.waitstatus_to_exitcode(status) == (0 if expected_mode == 0o755 else 1)
+    assert root.stat().st_mode & 0o777 == expected_mode
+    assert settings.read_text() == 'keep'
+    assert settings.stat().st_mode & 0o777 == 0o600
+    assert b'0775 -> 0755' in output
+
+
+def test_permission_confirmation_without_terminal_rejects(tmp_path):
+    root = tmp_path / 'root'
+    root.mkdir()
+    root.chmod(0o775)
+    (root / '.hwmonitor-mqtt-bootstrap').touch()
+    (root / 'sender').touch()
+    (root / '.hwmonitor-mqtt-bootstrap').chmod(0o644)
+    (root / 'sender').chmod(0o644)
+    script = BOOTSTRAP.read_text().split("<<'PY_CONFIRM' || exit 1\n", 1)[1].split('\nPY_CONFIRM', 1)[0]
+    wrapper = PERMISSION_WRAPPER
+    result = subprocess.run([sys.executable, '-I', '-c', wrapper, script, str(root)],
+                            capture_output=True, text=True, start_new_session=True)
+    assert result.returncode != 0
+    assert 'Cannot safely confirm' in result.stderr
+    assert root.stat().st_mode & 0o777 == 0o775
+
+
+@pytest.mark.parametrize('replacement', ['symlink', 'directory'])
+def test_permission_confirmation_rejects_replaced_directory(tmp_path, replacement):
+    import pty
+    import select
+
+    root = tmp_path / 'root'
+    root.mkdir()
+    root.chmod(0o775)
+    for name in ('.hwmonitor-mqtt-bootstrap', 'sender'):
+        (root / name).touch(mode=0o644)
+        (root / name).chmod(0o644)
+    script = BOOTSTRAP.read_text().split("<<'PY_CONFIRM' || exit 1\n", 1)[1].split('\nPY_CONFIRM', 1)[0]
+    pid, terminal = pty.fork()
+    if pid == 0:
+        os.execv(sys.executable, [sys.executable, '-I', '-c', PERMISSION_WRAPPER, script, str(root)])
+    output = b''
+    try:
+        while b'Enter = no]' not in output:
+            assert select.select([terminal], [], [], 5)[0], output
+            output += os.read(terminal, 4096)
+        original = tmp_path / 'original'
+        root.rename(original)
+        target = tmp_path / 'target'
+        target.mkdir(mode=0o777)
+        target.chmod(0o777)
+        if replacement == 'symlink':
+            root.symlink_to(target)
+        else:
+            target.rename(root)
+            target = root
+        os.write(terminal, b'y\n')
+        _, status = os.waitpid(pid, 0)
+    finally:
+        os.close(terminal)
+    assert os.waitstatus_to_exitcode(status) != 0
+    assert original.stat().st_mode & 0o777 == 0o775
+    assert target.stat().st_mode & 0o777 == 0o777
+
+
+@pytest.mark.parametrize('marker', ['pending', 'sender'])
+@pytest.mark.parametrize('replacement', ['symlink', 'writable'])
+def test_permission_confirmation_rejects_replaced_nested_directory(tmp_path, marker, replacement):
+    import pty
+    import select
+
+    root = tmp_path / 'root'
+    root.mkdir(mode=0o775)
+    root.chmod(0o775)
+    parent_mode = tmp_path.stat().st_mode & 0o777
+    settings = root / '.env'
+    settings.write_text('keep')
+    settings.chmod(0o600)
+    names = ('.hwmonitor-mqtt-bootstrap-pending',) if marker == 'pending' else ('.hwmonitor-mqtt-bootstrap', 'sender')
+    for name in names:
+        (root / name).touch()
+        (root / name).chmod(0o644)
+    package = root / 'hwmonitor_mqtt'
+    platforms = package / 'platforms'
+    platforms.mkdir(parents=True)
+    package.chmod(0o755)
+    platforms.chmod(0o755)
+    script = BOOTSTRAP.read_text().split("<<'PY_CONFIRM' || exit 1\n", 1)[1].split('\nPY_CONFIRM', 1)[0]
+    pid, terminal = pty.fork()
+    if pid == 0:
+        os.execv(sys.executable, [sys.executable, '-I', '-c', PERMISSION_WRAPPER, script, str(root)])
+    output = b''
+    try:
+        while b'Enter = no]' not in output:
+            assert select.select([terminal], [], [], 5)[0], output
+            output += os.read(terminal, 4096)
+        original = package / 'old-platforms'
+        platforms.rename(original)
+        target = tmp_path / 'target'
+        target.mkdir()
+        target.chmod(0o777)
+        if replacement == 'symlink':
+            platforms.symlink_to(target)
+        else:
+            target.rename(platforms)
+            target = platforms
+        os.write(terminal, b'y\n')
+        _, status = os.waitpid(pid, 0)
+    finally:
+        os.close(terminal)
+    assert os.waitstatus_to_exitcode(status) != 0
+    assert root.stat().st_mode & 0o777 == 0o775
+    assert original.stat().st_mode & 0o777 == 0o755
+    assert target.stat().st_mode & 0o777 == 0o777
+    assert tmp_path.stat().st_mode & 0o777 == parent_mode
+    assert settings.read_text() == 'keep' and settings.stat().st_mode & 0o777 == 0o600
+
+
+@pytest.mark.parametrize('layout', ['pending', 'compiled', 'source'])
+def test_permission_confirmation_accepts_recognized_layout(tmp_path, layout):
+    import pty
+    import select
+
+    root = tmp_path / 'root'
+    root.mkdir()
+    root.chmod(0o775)
+    marker = '.hwmonitor-mqtt-bootstrap-pending' if layout == 'pending' else '.hwmonitor-mqtt-bootstrap'
+    (root / marker).touch()
+    (root / marker).chmod(0o644)
+    if layout == 'compiled':
+        (root / 'sender').touch()
+        (root / 'sender').chmod(0o644)
+    if layout == 'source':
+        package = root / 'hwmonitor_mqtt'
+        platforms = package / 'platforms'
+        platforms.mkdir(parents=True)
+        package.chmod(0o755)
+        platforms.chmod(0o755)
+        (platforms / 'install.py').touch()
+        (platforms / 'install.py').chmod(0o644)
+    script = BOOTSTRAP.read_text().split("<<'PY_CONFIRM' || exit 1\n", 1)[1].split('\nPY_CONFIRM', 1)[0]
+    pid, terminal = pty.fork()
+    if pid == 0:
+        os.execv(sys.executable, [sys.executable, '-I', '-c', PERMISSION_WRAPPER, script, str(root)])
+    output = b''
+    try:
+        while b'Enter = no]' not in output:
+            assert select.select([terminal], [], [], 5)[0], output
+            output += os.read(terminal, 4096)
+        os.write(terminal, b'y\n')
+        _, status = os.waitpid(pid, 0)
+    finally:
+        os.close(terminal)
+    assert os.waitstatus_to_exitcode(status) == 0
+    assert root.stat().st_mode & 0o777 == 0o755

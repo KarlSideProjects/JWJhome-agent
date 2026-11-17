@@ -33,6 +33,8 @@ PVE 原生來源安裝會準備本機節點與 cluster ID。它以 root 使用�
 
 下載命令需要 root 權限，以便安裝程式、建立服務與唯讀群組。一般 Linux 使用 Python Docker sender；PVE 使用原生 systemd sender。Windows 安裝器準備 Python、uv、LibreHardwareMonitor 與開機排程。
 
+如果已辨認的 root 擁有安裝根目錄允許群組或其他人寫入，安裝器會顯示目錄與目前及建議權限，並從控制終端詢問是否移除這些寫入權限。輸入 `y`、`yes`、`是` 或 `要` 並按 Enter 同意；輸入 `n`、`no`、`否`、`不要` 或直接按 Enter 取消。沒有控制終端或輸入結束時會停止且不修改權限。同意後只收緊該目錄一層，不遞迴修改子檔、不變更擁有者，也不修改 `/opt` 等共用父目錄；父目錄不受信任時仍會停止。
+
 PVE 安裝會檢查舊 Docker 容器、準備本機識別、保留 MQTT 設定，並安裝 `hwmonitor-mqtt-pve-snapshot.service`、對應 timer 與 `hwmonitor-mqtt-pve.service`。快照位於 `/run/hwmonitor-mqtt-pve/snapshot.json`。來源升級會驗證程式與目錄的 root 擁有權及寫入權限，並以隔離環境執行採集程式；直接安裝器遇到既有 runtime 會拒絕覆蓋，請使用上方來源安裝命令升級。升級失敗時會嘗試回復先前的程式、服務、排程及快照；回復也可能失敗，私有備份與錯誤日誌需妥善保管。
 
 資料保留實際採樣時間；快照過期時 guest 資料會顯示錯誤並保留上次結果，SMART 會顯示不可用。單顆磁碟採集失敗時會標示部分失敗並保留該磁碟先前警報與舊採樣時間；資料不完整時不會宣稱健康。這些行為已有模擬測試與受限本機權限驗證，完整 systemd 和 PVE 實機驗收仍待進行。
