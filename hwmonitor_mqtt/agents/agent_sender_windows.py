@@ -368,7 +368,7 @@ metrics: Dict[str, Any] = {
     "system": None,
     "gpu": [],
     "disk_smart": {"observed_at": None, "status": "unavailable", "alerts": [], "devices": {}},
-    "docker": {"observed_at": None, "status": "unavailable", "containers": [], "truncated": False},
+    "docker": docker.initial_snapshot(HOSTNAME),
 }
 smart_collector = SmartCollector(provider=lambda: get_windows_disk_sources())
 
@@ -1237,7 +1237,7 @@ async def loop_smart():
 
 async def loop_docker():
     while True:
-        metrics["docker"] = await asyncio.to_thread(docker.poll_once)
+        metrics["docker"] = await asyncio.to_thread(docker.poll_once, HOSTNAME)
         await asyncio.sleep(max(1.0, DOCKER_POLL_INTERVAL_SEC))
 
 
