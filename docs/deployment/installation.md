@@ -83,6 +83,12 @@ ARM64 與 PVE 來源安裝仍需各自實機驗證。Windows 請使用 [Windows 
 & ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/KarlSideProjects/JWJhome-agent/master/bootstrap-source.ps1' -ErrorAction Stop).Content))
 ```
 
+測試尚未合併的版本時，將以下 `完整commitSHA` 換成已推送、包含此固定版本功能的完整 40 位小寫 commit SHA，並在系統管理員 PowerShell 執行：
+
+```powershell
+& { $c='完整commitSHA'; $p=Join-Path $env:TEMP ('hwmonitor-'+[guid]::NewGuid()+'.ps1'); try { Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/KarlSideProjects/JWJhome-agent/$c/bootstrap-source.ps1" -OutFile $p -ErrorAction Stop; & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p -Commit $c; if ($LASTEXITCODE -ne 0) { throw "安裝失敗：$LASTEXITCODE" } } finally { Remove-Item -LiteralPath $p -ErrorAction SilentlyContinue } }
+```
+
 檢查排程狀態：
 
 ```powershell

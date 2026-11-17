@@ -669,3 +669,11 @@ def test_sender_version_uses_installed_manifest_or_unknown(tmp_path, monkeypatch
     monkeypatch.setattr(module, 'SENDER_VERSION', module.installed_identity()[0])
     assert module.build_full_payload(now_ts=1)['sender_version'] == '4.5.6'
     assert module.build_esp_payload(now_ts=1)['sender_version'] == '4.5.6'
+
+
+def test_windows_docker_only_in_full_payload():
+    module = _import_agent_sender_windows()
+    snapshot = {"status": "ok", "observed_at": 42, "containers": [{"id": "abc"}], "truncated": False}
+    module.metrics["docker"] = snapshot
+    assert module.build_full_payload(now_ts=1)["docker"] == snapshot
+    assert "docker" not in module.build_esp_payload(now_ts=1)

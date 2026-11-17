@@ -1,0 +1,12 @@
+{
+  "feature": "sender.smart-discovery",
+  "fingerprint": "cea14e78fd25b203ef7b8c1191bf31254a5264b6b9c4d2f8608bbb4cec358519",
+  "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+  "verdict": "pass",
+  "findings": [],
+  "basis": "獨立複核相對 HEAD 2660b1a 的 Windows pin 增量與空值修正，包含測試、安裝文件及受影響流程；沿用原 PR 既有審查，未重審 Docker 實作。作者回報相關測試 28 passed；未在 Windows 或 PowerShell 5.1 實跑。",
+  "scope": "Windows candidate pinned installation incremental review",
+  "limitations": [
+    "Windows及PowerShell5.1未實機執行"
+  ]
+}

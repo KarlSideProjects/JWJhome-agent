@@ -1,0 +1,13 @@
+{
+  "feature": "sender.release-orchestration",
+  "fingerprint": "1a65eb78e8e42089e0ebba277e698f383e687cce45a810afc62cebf02a5c76b6",
+  "reviewer": "independent Codex Terra medium /root/review",
+  "verdict": "pass",
+  "findings": [],
+  "base": "43b91da8de0cfcbe4e71a0385c385e038275985c",
+  "scope": "依交付規範的本次變更及相關契約有界獨立審查；未實測 Windows。",
+  "basis": "發布控制流程及其契約無直接變更；此判定不代替發布驗收。",
+  "limitations": [
+    "Windows Docker Desktop SYSTEM 排程、Windows 編譯產物與遠端檢查尚未驗證。"
+  ]
+}

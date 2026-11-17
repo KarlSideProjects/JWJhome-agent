@@ -16,8 +16,8 @@ def download_function():
     return text.split('# Begin source download', 1)[1].split('# End source download', 1)[0]
 
 
-@pytest.mark.parametrize('api_limited', [False, True])
-def test_download_pins_commit_and_validates_archive_before_activation(tmp_path, api_limited):
+@pytest.mark.parametrize(('api_limited', 'pinned'), [(False, False), (True, False), (False, True)])
+def test_download_pins_commit_and_validates_archive_before_activation(tmp_path, api_limited, pinned):
     archive = tmp_path / 'source.zip'
     prefix = 'hwmonitor-mqtt-' + COMMIT + '/'
     with zipfile.ZipFile(archive, 'w') as content:
@@ -30,14 +30,15 @@ def test_download_pins_commit_and_validates_archive_before_activation(tmp_path, 
     stage.mkdir()
     shell = r'''
 $global:urls = [Collections.Generic.List[string]]::new()
-function Invoke-RestMethod { param($Uri, $Headers) if ($env:API_LIMITED -eq '1') { throw 'HTTP 403' }; @{ sha = $env:COMMIT } }
-function Invoke-WebRequest { param([switch]$UseBasicParsing, $Uri, $OutFile) if ($Uri.Contains('info/refs')) { [IO.File]::WriteAllText($OutFile, ("001e# service=git-upload-pack`n0000003f" + $env:COMMIT + " refs/heads/master`n0000")); return }; $global:urls.Add($Uri); if ($Uri.EndsWith('.zip')) { Copy-Item $env:ARCHIVE $OutFile } else { Copy-Item $env:VALIDATOR $OutFile } }
+function Invoke-RestMethod { param($Uri, $Headers) if ($env:PINNED -eq '1') { throw 'unexpected API call' }; if ($env:API_LIMITED -eq '1') { throw 'HTTP 403' }; @{ sha = $env:COMMIT } }
+function Invoke-WebRequest { param([switch]$UseBasicParsing, $Uri, $OutFile) if ($Uri.Contains('info/refs')) { if ($env:PINNED -eq '1') { throw 'unexpected refs call' }; [IO.File]::WriteAllText($OutFile, ("001e# service=git-upload-pack`n0000003f" + $env:COMMIT + " refs/heads/master`n0000")); return }; $global:urls.Add($Uri); if ($Uri.EndsWith('.zip')) { Copy-Item $env:ARCHIVE $OutFile } else { Copy-Item $env:VALIDATOR $OutFile } }
 ''' + download_function() + r'''
-$result = Get-VerifiedSource -WorkDirectory $env:WORK
+$pin = if ($env:PINNED -eq '1') { $env:COMMIT } else { '' }
+$result = Get-VerifiedSource -WorkDirectory $env:WORK -PinnedCommit $pin
 if ($result.Commit -ne $env:COMMIT -or -not (Test-Path (Join-Path $result.Path 'uv.lock'))) { throw 'source missing' }
 if ($global:urls.Count -ne 2 -or @($global:urls | Where-Object { -not $_.Contains($env:COMMIT) }).Count -ne 0) { throw 'URLs not pinned' }
 '''
-    result = run_pwsh(shell, env={'WORK': str(stage), 'COMMIT': COMMIT, 'API_LIMITED': str(int(api_limited)), 'ARCHIVE': str(archive),
+    result = run_pwsh(shell, env={'WORK': str(stage), 'COMMIT': COMMIT, 'API_LIMITED': str(int(api_limited)), 'PINNED': str(int(pinned)), 'ARCHIVE': str(archive),
                                   'VALIDATOR': str(ROOT / 'scripts/windows/validate_source_archive.ps1')})
     assert result.returncode == 0, result.stderr
 
@@ -73,3 +74,16 @@ catch { if ($_.Exception.Message -ne 'Invalid source commit.') { throw }; exit 0
 '''
     result = run_pwsh(shell, env={'WORK': str(tmp_path), 'REFS': refs})
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize('commit', ['', 'BAD', 'A' * 40, 'a' * 39, 'a' * 40 + '\n'])
+def test_invalid_explicit_commit_stops_before_side_effects(tmp_path, commit):
+    shell = r'''
+function Invoke-WebRequest { throw 'unexpected download' }
+function Invoke-RestMethod { throw 'unexpected API call' }
+try { & $env:BOOTSTRAP -Commit $env:BAD_COMMIT; throw 'accepted invalid commit' }
+catch { if ($_.Exception.Message -ne 'Invalid source commit.') { throw }; exit 0 }
+'''
+    result = run_pwsh(shell, env={'BOOTSTRAP': str(BOOTSTRAP), 'BAD_COMMIT': commit, 'ProgramData': str(tmp_path)})
+    assert result.returncode == 0, result.stderr
+    assert list(tmp_path.iterdir()) == []

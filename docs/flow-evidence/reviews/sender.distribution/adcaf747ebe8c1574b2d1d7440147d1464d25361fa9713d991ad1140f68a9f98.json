@@ -1,0 +1,13 @@
+{
+  "feature": "sender.distribution",
+  "fingerprint": "adcaf747ebe8c1574b2d1d7440147d1464d25361fa9713d991ad1140f68a9f98",
+  "reviewer": "independent Codex Terra medium /root/review",
+  "verdict": "pass",
+  "findings": [],
+  "base": "43b91da8de0cfcbe4e71a0385c385e038275985c",
+  "scope": "依交付規範的本次變更及相關契約有界獨立審查；未實測 Windows。",
+  "basis": "README 僅增加 Docker context 限制說明；既有發行及安裝程式沒有變更。",
+  "limitations": [
+    "Windows Docker Desktop SYSTEM 排程、Windows 編譯產物與遠端檢查尚未驗證。"
+  ]
+}

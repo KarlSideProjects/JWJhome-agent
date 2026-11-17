@@ -177,7 +177,10 @@
       "tests/test_pve_snapshot_writer.py",
       "tests/test_pve_local_install.py",
       "tests/test_pve_local_bootstrap.py",
-      "tests/test_pve_install_trust.py"
+      "tests/test_pve_install_trust.py",
+      "hwmonitor_mqtt/collectors/docker.py",
+      "tests/test_docker_collector.py",
+      "docs/flows/windows-docker-contract.md"
     ],
     "exclude": {}
   },
@@ -200,7 +203,7 @@
     {
       "path": "README.md",
       "kind": "file",
-      "md5": "a8632d7da2f7f91dac34f6f7c6899903"
+      "md5": "0f30931d0399e8ece972a8d2e0e0694f"
     },
     {
       "path": "LICENSE",
@@ -700,7 +703,7 @@
     {
       "path": "tests/test_windows_sender_profile.py",
       "kind": "file",
-      "md5": "ff0341521c62dd3cc03f0eb4533dcda4"
+      "md5": "145180ca840574b28bed60f503a08953"
     },
     {
       "path": "tests/fixtures/release-notices/linux-x64-runtime-bundle-1d162.txt",
@@ -790,7 +793,7 @@
     {
       "path": "hwmonitor_mqtt/agents/agent_sender_windows.py",
       "kind": "file",
-      "md5": "2dad7a74cce85117169073ac2623fbbe"
+      "md5": "6a3756f7bdf429ceda132d9860344715"
     },
     {
       "path": "tests/test_pve_acceptance.py",
@@ -825,7 +828,7 @@
     {
       "path": "bootstrap-source.ps1",
       "kind": "file",
-      "md5": "1e8aa3b0b14ba0eb3a1e0071413013ba"
+      "md5": "c13e212d7d10ddc334223226e70e862a"
     },
     {
       "path": "Dockerfile.source",
@@ -940,7 +943,7 @@
     {
       "path": "tests/test_windows_source_bootstrap.py",
       "kind": "file",
-      "md5": "aa9f208e66947172df8a3023ea721961"
+      "md5": "2479ecca847d8aaa6d9b174cd3515801"
     },
     {
       "path": "tests/test_windows_source_trust.py",
@@ -1061,6 +1064,21 @@
       "path": "tests/test_pve_install_trust.py",
       "kind": "file",
       "md5": "d4ba0bd4491515034fc0118dee8a3b81"
+    },
+    {
+      "path": "hwmonitor_mqtt/collectors/docker.py",
+      "kind": "file",
+      "md5": "95c1ac953a5a2579d1e67409f2e80ade"
+    },
+    {
+      "path": "tests/test_docker_collector.py",
+      "kind": "file",
+      "md5": "8cbf834b74d68d349d27e17f9e86fbd9"
+    },
+    {
+      "path": "docs/flows/windows-docker-contract.md",
+      "kind": "file",
+      "md5": "908728aab633e600dadc69e307a6a14f"
     }
   ],
   "features": [
@@ -2544,6 +2562,18 @@
         {
           "node": "Y",
           "path": "tests/test_windows_sender_profile.py"
+        },
+        {
+          "node": "Y",
+          "path": "hwmonitor_mqtt/collectors/docker.py"
+        },
+        {
+          "node": "Y",
+          "path": "tests/test_docker_collector.py"
+        },
+        {
+          "node": "Y",
+          "path": "docs/flows/windows-docker-contract.md"
         }
       ],
       "depends_on": [
@@ -2566,7 +2596,10 @@
         "tests/_pwsh.py",
         "tests/test_esp_sender_profile.py",
         "tests/test_powershell_syntax.py",
-        "tests/test_windows_sender_profile.py"
+        "tests/test_windows_sender_profile.py",
+        "hwmonitor_mqtt/collectors/docker.py",
+        "tests/test_docker_collector.py",
+        "docs/flows/windows-docker-contract.md"
       ]
     },
     {
@@ -2828,6 +2861,26 @@
         {
           "node": "K",
           "path": "docs/configuration/pve.env.example"
+        },
+        {
+          "node": "N",
+          "path": "hwmonitor_mqtt/collectors/docker.py"
+        },
+        {
+          "node": "N",
+          "path": "tests/test_docker_collector.py"
+        },
+        {
+          "node": "N",
+          "path": "docs/flows/windows-docker-contract.md"
+        },
+        {
+          "node": "N",
+          "path": "hwmonitor_mqtt/agents/agent_sender_windows.py"
+        },
+        {
+          "node": "N",
+          "path": "tests/test_windows_sender_profile.py"
         }
       ],
       "depends_on": [
@@ -2872,7 +2925,12 @@
         "scripts/release-tests/cloud-images.json",
         "scripts/release-tests/README.md",
         "docs/configuration/pve.env.example",
-        "tests/windows_source_archive_compat.ps1"
+        "tests/windows_source_archive_compat.ps1",
+        "hwmonitor_mqtt/collectors/docker.py",
+        "tests/test_docker_collector.py",
+        "docs/flows/windows-docker-contract.md",
+        "hwmonitor_mqtt/agents/agent_sender_windows.py",
+        "tests/test_windows_sender_profile.py"
       ]
     },
     {
@@ -3507,6 +3565,125 @@
       "reviewer": "independent Orca reviewer orca_session_id:68e0ef12-e539-4688-8d50-db8320a25353",
       "verdict": "pass",
       "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/a231ce4df88c1ccbe767dcd8a47e229f7d398784ad8644f831032ccb12ec6394.json"
+    },
+    {
+      "feature": "development.delivery",
+      "fingerprint": "74332a21557ac59588eb8c5bc39faa3bdb6cf9728707594f488d2178f024e55e",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/development.delivery/74332a21557ac59588eb8c5bc39faa3bdb6cf9728707594f488d2178f024e55e.json"
+    },
+    {
+      "feature": "sender.build",
+      "fingerprint": "28926145ba9e9bc7e75e29a35ff34fdbd5a64e4f497e85d7ef2f7d6e50190558",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.build/28926145ba9e9bc7e75e29a35ff34fdbd5a64e4f497e85d7ef2f7d6e50190558.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "e473835e601940c4654ce0f031746fa1811d769fbf0964fbad3715bd6ef97ca1",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/e473835e601940c4654ce0f031746fa1811d769fbf0964fbad3715bd6ef97ca1.json"
+    },
+    {
+      "feature": "sender.distribution",
+      "fingerprint": "adcaf747ebe8c1574b2d1d7440147d1464d25361fa9713d991ad1140f68a9f98",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.distribution/adcaf747ebe8c1574b2d1d7440147d1464d25361fa9713d991ad1140f68a9f98.json"
+    },
+    {
+      "feature": "sender.license",
+      "fingerprint": "aee7575d32e8a3cd4458f2341513fa4c3a19f6fd438bae648c8dad70af4fd6a8",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.license/aee7575d32e8a3cd4458f2341513fa4c3a19f6fd438bae648c8dad70af4fd6a8.json"
+    },
+    {
+      "feature": "sender.pve-local",
+      "fingerprint": "c05275cf35c643bc28edff04f938d9542b02c6fb2de6662f8c27633787ecd60c",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.pve-local/c05275cf35c643bc28edff04f938d9542b02c6fb2de6662f8c27633787ecd60c.json"
+    },
+    {
+      "feature": "sender.release-inspection",
+      "fingerprint": "62f014385d000175f70a5e19f797ba7c13d9b538b0dd34e0e35e2afbb50c40fb",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.release-inspection/62f014385d000175f70a5e19f797ba7c13d9b538b0dd34e0e35e2afbb50c40fb.json"
+    },
+    {
+      "feature": "sender.release-orchestration",
+      "fingerprint": "1a65eb78e8e42089e0ebba277e698f383e687cce45a810afc62cebf02a5c76b6",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.release-orchestration/1a65eb78e8e42089e0ebba277e698f383e687cce45a810afc62cebf02a5c76b6.json"
+    },
+    {
+      "feature": "sender.smart-discovery",
+      "fingerprint": "df6bb6b8204fd540932171d9622464f04fe8465a9b343c4fed244d5320193d5a",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.smart-discovery/df6bb6b8204fd540932171d9622464f04fe8465a9b343c4fed244d5320193d5a.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "6d7604ee128fbaaf1964b5647e1cd9b990a4ad159ea9e88fb3f7a747552f771c",
+      "reviewer": "independent Codex Terra medium /root/review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/6d7604ee128fbaaf1964b5647e1cd9b990a4ad159ea9e88fb3f7a747552f771c.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "877957e3e07a385b166e97be8826512f8839f8569814acebb9b1b338e9103e69",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/877957e3e07a385b166e97be8826512f8839f8569814acebb9b1b338e9103e69.json"
+    },
+    {
+      "feature": "sender.distribution",
+      "fingerprint": "a085e3792a8fa62f8debc8607a27a4894d2e822a44520d26fdd2ba20580beb40",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.distribution/a085e3792a8fa62f8debc8607a27a4894d2e822a44520d26fdd2ba20580beb40.json"
+    },
+    {
+      "feature": "sender.pve-local",
+      "fingerprint": "239d1bcd17394cc6cc18df977ce6c3e6a3502485b3f28d21e6b97d76981417fd",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.pve-local/239d1bcd17394cc6cc18df977ce6c3e6a3502485b3f28d21e6b97d76981417fd.json"
+    },
+    {
+      "feature": "sender.smart-discovery",
+      "fingerprint": "cea14e78fd25b203ef7b8c1191bf31254a5264b6b9c4d2f8608bbb4cec358519",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.smart-discovery/cea14e78fd25b203ef7b8c1191bf31254a5264b6b9c4d2f8608bbb4cec358519.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "f5129a89c240dac1cf2151bfd1ec750d70e3f1055a1e8992c9d511f9b8710e10",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/f5129a89c240dac1cf2151bfd1ec750d70e3f1055a1e8992c9d511f9b8710e10.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "af7c7d1bca5b94e529709cadf866475adff27212f9afc1f15370fe9196225700",
+      "reviewer": "independent Terra /root/docker_bug_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/af7c7d1bca5b94e529709cadf866475adff27212f9afc1f15370fe9196225700.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "1beca78be326253c0617bdaa5ba14b9822e07878e99581273dcfaceca8cadafd",
+      "reviewer": "independent Terra /root/docker_bug_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/1beca78be326253c0617bdaa5ba14b9822e07878e99581273dcfaceca8cadafd.json"
     }
   ],
   "policy_inputs": [

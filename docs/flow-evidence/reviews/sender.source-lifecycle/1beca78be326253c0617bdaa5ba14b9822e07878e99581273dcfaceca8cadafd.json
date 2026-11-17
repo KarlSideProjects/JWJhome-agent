@@ -1,0 +1,9 @@
+{
+  "feature": "sender.source-lifecycle",
+  "fingerprint": "1beca78be326253c0617bdaa5ba14b9822e07878e99581273dcfaceca8cadafd",
+  "reviewer": "independent Terra /root/docker_bug_review",
+  "verdict": "pass",
+  "findings": [],
+  "basis": "有界審查 Windows Docker 修復增量、source/compiled lifecycle 文件、版本化資料契約、初始與錯誤狀態、容器 ID、CLI 路徑與測試；實機簽章與 ACL 為委派者回報，SYSTEM 連線及新程式部署尚待驗證。",
+  "scope": "Windows Docker compatibility and explicit protected executable path"
+}

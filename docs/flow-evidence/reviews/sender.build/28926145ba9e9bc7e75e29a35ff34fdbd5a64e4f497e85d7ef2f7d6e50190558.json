@@ -1,0 +1,13 @@
+{
+  "feature": "sender.build",
+  "fingerprint": "28926145ba9e9bc7e75e29a35ff34fdbd5a64e4f497e85d7ef2f7d6e50190558",
+  "reviewer": "independent Codex Terra medium /root/review",
+  "verdict": "pass",
+  "findings": [],
+  "base": "43b91da8de0cfcbe4e71a0385c385e038275985c",
+  "scope": "依交付規範的本次變更及相關契約有界獨立審查；未實測 Windows。",
+  "basis": "新增標準函式庫 collector，Windows Nuitka 使用靜態匯入；未執行 Windows 編譯驗收。",
+  "limitations": [
+    "Windows Docker Desktop SYSTEM 排程、Windows 編譯產物與遠端檢查尚未驗證。"
+  ]
+}
