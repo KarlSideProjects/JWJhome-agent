@@ -828,7 +828,7 @@
     {
       "path": "bootstrap-source.ps1",
       "kind": "file",
-      "md5": "1e8aa3b0b14ba0eb3a1e0071413013ba"
+      "md5": "c13e212d7d10ddc334223226e70e862a"
     },
     {
       "path": "Dockerfile.source",
@@ -943,7 +943,7 @@
     {
       "path": "tests/test_windows_source_bootstrap.py",
       "kind": "file",
-      "md5": "aa9f208e66947172df8a3023ea721961"
+      "md5": "2479ecca847d8aaa6d9b174cd3515801"
     },
     {
       "path": "tests/test_windows_source_trust.py",
@@ -3635,6 +3635,41 @@
       "reviewer": "independent Codex Terra medium /root/review",
       "verdict": "pass",
       "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/6d7604ee128fbaaf1964b5647e1cd9b990a4ad159ea9e88fb3f7a747552f771c.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "877957e3e07a385b166e97be8826512f8839f8569814acebb9b1b338e9103e69",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/877957e3e07a385b166e97be8826512f8839f8569814acebb9b1b338e9103e69.json"
+    },
+    {
+      "feature": "sender.distribution",
+      "fingerprint": "a085e3792a8fa62f8debc8607a27a4894d2e822a44520d26fdd2ba20580beb40",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.distribution/a085e3792a8fa62f8debc8607a27a4894d2e822a44520d26fdd2ba20580beb40.json"
+    },
+    {
+      "feature": "sender.pve-local",
+      "fingerprint": "239d1bcd17394cc6cc18df977ce6c3e6a3502485b3f28d21e6b97d76981417fd",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.pve-local/239d1bcd17394cc6cc18df977ce6c3e6a3502485b3f28d21e6b97d76981417fd.json"
+    },
+    {
+      "feature": "sender.smart-discovery",
+      "fingerprint": "cea14e78fd25b203ef7b8c1191bf31254a5264b6b9c4d2f8608bbb4cec358519",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.smart-discovery/cea14e78fd25b203ef7b8c1191bf31254a5264b6b9c4d2f8608bbb4cec358519.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "f5129a89c240dac1cf2151bfd1ec750d70e3f1055a1e8992c9d511f9b8710e10",
+      "reviewer": "independent Codex Terra medium /root/windows_pin_review",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/f5129a89c240dac1cf2151bfd1ec750d70e3f1055a1e8992c9d511f9b8710e10.json"
     }
   ],
   "policy_inputs": [
