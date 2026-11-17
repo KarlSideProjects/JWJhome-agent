@@ -519,7 +519,7 @@ def test_permission_confirmation_rejects_replaced_nested_directory(tmp_path, mar
     assert settings.read_text() == 'keep' and settings.stat().st_mode & 0o777 == 0o600
 
 
-@pytest.mark.parametrize('layout', ['pending', 'compiled', 'source'])
+@pytest.mark.parametrize('layout', ['pending', 'compiled', 'source', 'legacy-source'])
 def test_permission_confirmation_accepts_recognized_layout(tmp_path, layout):
     import pty
     import select
@@ -533,14 +533,19 @@ def test_permission_confirmation_accepts_recognized_layout(tmp_path, layout):
     if layout == 'compiled':
         (root / 'sender').touch()
         (root / 'sender').chmod(0o644)
-    if layout == 'source':
+    if layout in ('source', 'legacy-source'):
         package = root / 'hwmonitor_mqtt'
         platforms = package / 'platforms'
         platforms.mkdir(parents=True)
         package.chmod(0o755)
         platforms.chmod(0o755)
         (platforms / 'install.py').touch()
-        (platforms / 'install.py').chmod(0o644)
+        (platforms / 'install.py').chmod(0o664 if layout == 'legacy-source' else 0o644)
+        if layout == 'legacy-source':
+            package.chmod(0o775)
+            platforms.chmod(0o775)
+            (root / '.env').write_text('keep')
+            (root / '.env').chmod(0o600)
     script = BOOTSTRAP.read_text().split("<<'PY_CONFIRM' || exit 1\n", 1)[1].split('\nPY_CONFIRM', 1)[0]
     pid, terminal = pty.fork()
     if pid == 0:
@@ -556,3 +561,9 @@ def test_permission_confirmation_accepts_recognized_layout(tmp_path, layout):
         os.close(terminal)
     assert os.waitstatus_to_exitcode(status) == 0
     assert root.stat().st_mode & 0o777 == 0o755
+    if layout == 'legacy-source':
+        assert (root / '.env').read_text() == 'keep'
+        assert (root / '.env').stat().st_mode & 0o777 == 0o600
+        assert package.stat().st_mode & 0o777 == 0o775
+        assert platforms.stat().st_mode & 0o777 == 0o775
+        assert (platforms / 'install.py').stat().st_mode & 0o777 == 0o664

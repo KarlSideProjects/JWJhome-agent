@@ -820,7 +820,7 @@
     {
       "path": "bootstrap-source.sh",
       "kind": "file",
-      "md5": "2ad91bb7f58832fadb5ae94c3cb2d8d9"
+      "md5": "31a0f0221f15a16f765997ee4dd5bdde"
     },
     {
       "path": "bootstrap-source.ps1",
@@ -890,7 +890,7 @@
     {
       "path": "tests/test_source_bootstrap.py",
       "kind": "file",
-      "md5": "176b1f1a31ddb217151b8dcf98267f54"
+      "md5": "5617faa3eda01f8b9b295b0a2464a53e"
     },
     {
       "path": "tests/test_source_config.py",
@@ -3472,6 +3472,41 @@
       "reviewer": "independent Orca reviewer orca_session_id:8a910cca-cfdb-42e7-a15e-296845436bbd",
       "verdict": "pass",
       "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/1825c55305441cfb4ccb324d5f04bc1f7405f989b70dd5fe9dd1e42e06eec64a.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "98d6820e67e96471ebec23a4b2bda25c3016497e84054baea3309383f1ad461c",
+      "reviewer": "independent Orca reviewer orca_session_id:68e0ef12-e539-4688-8d50-db8320a25353",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/98d6820e67e96471ebec23a4b2bda25c3016497e84054baea3309383f1ad461c.json"
+    },
+    {
+      "feature": "sender.distribution",
+      "fingerprint": "79017e8268a0230bf357ae7dcdff068fcf21cf4de9eff37b5dab8162c05f014d",
+      "reviewer": "independent Orca reviewer orca_session_id:68e0ef12-e539-4688-8d50-db8320a25353",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.distribution/79017e8268a0230bf357ae7dcdff068fcf21cf4de9eff37b5dab8162c05f014d.json"
+    },
+    {
+      "feature": "sender.pve-local",
+      "fingerprint": "7ca7fced0421c03ba42f9064f4071ec7b84546b6a3946b7c3a1dc44c53344ceb",
+      "reviewer": "independent Orca reviewer orca_session_id:68e0ef12-e539-4688-8d50-db8320a25353",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.pve-local/7ca7fced0421c03ba42f9064f4071ec7b84546b6a3946b7c3a1dc44c53344ceb.json"
+    },
+    {
+      "feature": "sender.smart-discovery",
+      "fingerprint": "9f480c0c2bddc5f5954adc94cdb52495bc095ed8ac0b3d3a36f00a33a6edb595",
+      "reviewer": "independent Orca reviewer orca_session_id:68e0ef12-e539-4688-8d50-db8320a25353",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.smart-discovery/9f480c0c2bddc5f5954adc94cdb52495bc095ed8ac0b3d3a36f00a33a6edb595.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "a231ce4df88c1ccbe767dcd8a47e229f7d398784ad8644f831032ccb12ec6394",
+      "reviewer": "independent Orca reviewer orca_session_id:68e0ef12-e539-4688-8d50-db8320a25353",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/a231ce4df88c1ccbe767dcd8a47e229f7d398784ad8644f831032ccb12ec6394.json"
     }
   ],
   "policy_inputs": [

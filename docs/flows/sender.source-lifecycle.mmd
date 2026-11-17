@@ -7,7 +7,7 @@ flowchart TD
     W{"Windows installation already exists?"}
     X["Acquire existing installation lock before download"]
     Y["Create protected installation directory and acquire lock"]
-    F["Linux/PVE: identify target; for recognized root-owned writable root, confirm on terminal and remove group/other write only from that directory; acquire lock and prepare prerequisites"]
+    F["Linux/PVE: identify target; recognize root-owned legacy source as replaceable data, verify stable paths and confirm writable root on terminal; restrict only root directory, acquire lock and prepare prerequisites"]
     H{"Linux Docker or native PVE"}
     K["Check Docker conflicts and prepare local PVE identity"]
     R["Check previous service or container; pin recognized previous Docker image when present"]
