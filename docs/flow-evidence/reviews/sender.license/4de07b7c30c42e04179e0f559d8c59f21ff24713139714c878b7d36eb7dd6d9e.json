@@ -1,0 +1,12 @@
+{
+  "feature": "sender.license",
+  "fingerprint": "4de07b7c30c42e04179e0f559d8c59f21ff24713139714c878b7d36eb7dd6d9e",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "僅共享契約 PVE 段變更，授權內容與其來源未改。",
+    "審查 fb052ea 至 cd6b828 的十二檔差異；未變範圍沿用 docs/flow-evidence/reviews/sender.license/67a5341b46ef8103bb52c7e151533d38868d63af70de173e61f2fe1a7af7c8c7.json 的獨立審查，並未冒稱本人重審全部原始碼。",
+    "四組相關測試 88 passed；PVE 真機紀錄由主端提供，本次未操作實機。GitHub 必要檢查與原生 smoke 尚待執行。"
+  ]
+}

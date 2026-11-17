@@ -1,0 +1,12 @@
+{
+  "feature": "sender.compiled-lifecycle",
+  "fingerprint": "68b6e64f1046784ca873caf7c81b27405c43a27ac410fda31fb58a67da0a50fe",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "PVE snapshot unit 與 source 安裝的修改不改 compiled 分支；共同安裝文件仍保留 compiled HTTPS 合約。",
+    "審查 fb052ea 至 cd6b828 的十二檔差異；未變範圍沿用 docs/flow-evidence/reviews/sender.compiled-lifecycle/bf188198fe55f7defdb8780c66a674aec7a260dc2e1875644d9e37de2d752d93.json 的獨立審查，並未冒稱本人重審全部原始碼。",
+    "四組相關測試 88 passed；PVE 真機紀錄由主端提供，本次未操作實機。GitHub 必要檢查與原生 smoke 尚待執行。"
+  ]
+}

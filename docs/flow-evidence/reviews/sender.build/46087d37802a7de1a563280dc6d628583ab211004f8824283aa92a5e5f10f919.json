@@ -1,0 +1,12 @@
+{
+  "feature": "sender.build",
+  "fingerprint": "46087d37802a7de1a563280dc6d628583ab211004f8824283aa92a5e5f10f919",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "本次未改建置流程；共享 PVE unit 權限變更與 source 固定 commit，不改編譯產物組裝。",
+    "審查 fb052ea 至 cd6b828 的十二檔差異；未變範圍沿用 docs/flow-evidence/reviews/sender.build/6a0a483df3797ec809e8b3d104035b965e4cac356bccd2f67b21c8a23c21d756.json 的獨立審查，並未冒稱本人重審全部原始碼。",
+    "四組相關測試 88 passed；PVE 真機紀錄由主端提供，本次未操作實機。GitHub 必要檢查與原生 smoke 尚待執行。"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "feature": "sender.source-lifecycle",
+  "fingerprint": "d478a2663ed0d687be959b4de3f6aab8d5d9ba5b62b08c59ba6aa4df9fa69621",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "--commit 僅接受 40 位小寫 hex，URL 固定指向既有 GitHub repo；source 安裝仍驗證封存與回復。",
+    "審查 fb052ea 至 cd6b828 的十二檔差異；未變範圍沿用 docs/flow-evidence/reviews/sender.source-lifecycle/72765b584c28af2087a0451c1d2cf0b12c8ff21cf31db2b40c967a840c205e56.json 的獨立審查，並未冒稱本人重審全部原始碼。",
+    "四組相關測試 88 passed；PVE 真機紀錄由主端提供，本次未操作實機。GitHub 必要檢查與原生 smoke 尚待執行。"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "feature": "sender.distribution",
+  "fingerprint": "960f994ad36a1684761d44b86951c8b4c1fa05ffa267d8685200a5645beb91b0",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "安裝文件新增固定 commit 的測試指令及 PVE 權限說明；既有 distribution 入口與 compiled 邏輯未變。",
+    "審查 fb052ea 至 cd6b828 的十二檔差異；未變範圍沿用 docs/flow-evidence/reviews/sender.distribution/f24825bc1ee4a718d53cb381118c33cf012342e61fff11aa5b9bc1e443f5ff31.json 的獨立審查，並未冒稱本人重審全部原始碼。",
+    "四組相關測試 88 passed；PVE 真機紀錄由主端提供，本次未操作實機。GitHub 必要檢查與原生 smoke 尚待執行。"
+  ]
+}
