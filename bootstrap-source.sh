@@ -184,7 +184,90 @@ if [[ ! -e "$root" ]]; then
 fi
 [[ ! -L "$root" && -d "$root" && $(stat -c %u "$root") == 0 ]] || { echo 'Untrusted installation directory.' >&2; exit 1; }
 root_mode=$(stat -c %a "$root")
-(( (8#$root_mode & 8#022) == 0 )) || { echo 'Installation directory must not be writable by others.' >&2; exit 1; }
+if (( (8#$root_mode & 8#022) != 0 )); then
+    python3 -I - "$root" <<'PY_CONFIRM' || exit 1
+import os, stat, sys
+
+path = sys.argv[1]
+def fail(message):
+    sys.exit(message)
+
+try:
+    fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    before = os.fstat(fd)
+    if before.st_uid != 0:
+        fail('Untrusted installation directory.')
+    def regular(name, directory=fd):
+        try:
+            info = os.stat(name, dir_fd=directory, follow_symlinks=False)
+            return stat.S_ISREG(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022
+        except FileNotFoundError:
+            return False
+    def is_link(name):
+        try:
+            return stat.S_ISLNK(os.stat(name, dir_fd=fd, follow_symlinks=False).st_mode)
+        except FileNotFoundError:
+            return False
+    def source_paths():
+        opened = []
+        try:
+            parent = fd
+            for name in ('hwmonitor_mqtt', 'platforms'):
+                try:
+                    child = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+                except FileNotFoundError:
+                    return True, False
+                opened.append(child)
+                info = os.fstat(child)
+                if info.st_uid != 0 or info.st_mode & 0o022:
+                    return False, False
+                parent = child
+            return True, regular('install.py', parent)
+        except OSError:
+            return False, False
+        finally:
+            for child in reversed(opened):
+                os.close(child)
+    def recognized():
+        safe_source, source_installer = source_paths()
+        return (safe_source and
+                not any(is_link(name) for name in ('.env', 'hwmonitor_mqtt', '.hwmonitor-mqtt-bootstrap', '.hwmonitor-mqtt-bootstrap-pending'))
+                and (regular('.hwmonitor-mqtt-bootstrap-pending') or
+                     (regular('.hwmonitor-mqtt-bootstrap') and (regular('sender') or source_installer))))
+    if not recognized():
+        fail('Untrusted or unrecognized installation directory.')
+    def unchanged():
+        current = os.stat(path, follow_symlinks=False)
+        opened = os.fstat(fd)
+        return (stat.S_ISDIR(current.st_mode) and current.st_dev == before.st_dev and
+                current.st_ino == before.st_ino and opened.st_uid == 0 and
+                opened.st_mode == before.st_mode)
+    if not unchanged():
+        fail('Installation directory changed; refusing to modify it.')
+    mode = stat.S_IMODE(before.st_mode)
+    with open('/dev/tty', 'r', encoding='utf-8') as tty_in, open('/dev/tty', 'w', encoding='utf-8') as tty:
+        tty.write(f'Installation directory: {path}\nPermissions: {mode:04o} -> {mode & ~0o022:04o}\n'
+                  'Remove group and other write access? This restricts who can modify the installation directory.\n')
+        while True:
+            tty.write('Continue? [y/yes/是/要; n/no/否/不要; Enter = no] ')
+            tty.flush()
+            answer = tty_in.readline()
+            if not answer or answer.strip().lower() in ('n', 'no', '否', '不要', ''):
+                fail('Installation directory permissions unchanged.')
+            if answer.strip().lower() in ('y', 'yes', '是', '要'):
+                break
+            tty.write('Please answer yes or no.\n')
+    if not unchanged() or not recognized():
+        fail('Installation directory changed; refusing to modify it.')
+    os.fchmod(fd, mode & ~0o022)
+    after = os.stat(path, follow_symlinks=False)
+    if (not stat.S_ISDIR(after.st_mode) or (after.st_dev, after.st_ino) != (before.st_dev, before.st_ino)
+            or stat.S_IMODE(os.fstat(fd).st_mode) != mode & ~0o022 or not recognized()):
+        fail('Installation directory changed; refusing to continue.')
+except OSError as exc:
+    fail(f'Cannot safely confirm installation directory permissions: {exc}')
+PY_CONFIRM
+fi
 lock="$root/.sender-install.lock"
 [[ ! -L "$lock" && ( ! -e "$lock" || ( -f "$lock" && $(stat -c %u "$lock") == 0 ) ) ]] || {
     echo 'Untrusted installation lock.' >&2; exit 1;
