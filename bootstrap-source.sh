@@ -197,10 +197,10 @@ try:
     before = os.fstat(fd)
     if before.st_uid != 0:
         fail('Untrusted installation directory.')
-    def regular(name, directory=fd):
+    def regular(name, directory=fd, writable=False):
         try:
             info = os.stat(name, dir_fd=directory, follow_symlinks=False)
-            return stat.S_ISREG(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022
+            return stat.S_ISREG(info.st_mode) and info.st_uid == 0 and not info.st_mode & (0o002 if writable else 0o022)
         except FileNotFoundError:
             return False
     def is_link(name):
@@ -208,29 +208,41 @@ try:
             return stat.S_ISLNK(os.stat(name, dir_fd=fd, follow_symlinks=False).st_mode)
         except FileNotFoundError:
             return False
-    def source_paths():
+    source_identity = None
+    def source_paths(writable):
         opened = []
+        identity = []
         try:
             parent = fd
             for name in ('hwmonitor_mqtt', 'platforms'):
                 try:
                     child = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
                 except FileNotFoundError:
-                    return True, False
+                    return True, False, tuple(identity)
                 opened.append(child)
                 info = os.fstat(child)
-                if info.st_uid != 0 or info.st_mode & 0o022:
-                    return False, False
+                if info.st_uid != 0 or info.st_mode & (0o002 if writable else 0o022):
+                    return False, False, ()
+                identity.append((info.st_dev, info.st_ino, info.st_mode))
                 parent = child
-            return True, regular('install.py', parent)
+            installer = regular('install.py', parent, writable)
+            if installer:
+                info = os.stat('install.py', dir_fd=parent, follow_symlinks=False)
+                identity.append((info.st_dev, info.st_ino, info.st_mode))
+            return True, installer, tuple(identity)
         except OSError:
-            return False, False
+            return False, False, ()
         finally:
             for child in reversed(opened):
                 os.close(child)
     def recognized():
-        safe_source, source_installer = source_paths()
-        return (safe_source and
+        global source_identity
+        legacy = not any(os.path.lexists(os.path.join(path, name)) for name in
+                         ('.hwmonitor-mqtt-bootstrap-pending', 'sender'))
+        safe_source, source_installer, identity = source_paths(legacy)
+        if source_identity is None:
+            source_identity = identity
+        return (safe_source and identity == source_identity and
                 not any(is_link(name) for name in ('.env', 'hwmonitor_mqtt', '.hwmonitor-mqtt-bootstrap', '.hwmonitor-mqtt-bootstrap-pending'))
                 and (regular('.hwmonitor-mqtt-bootstrap-pending') or
                      (regular('.hwmonitor-mqtt-bootstrap') and (regular('sender') or source_installer))))
