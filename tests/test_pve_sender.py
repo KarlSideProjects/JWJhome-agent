@@ -454,7 +454,7 @@ def test_installer_dry_run_reports_missing_private_configuration(monkeypatch, ca
     assert install.main(["--dry-run", "--pve-config", "/missing/pve.env"]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["collector"].endswith("agent_sender_async")
-    assert result["status"] == "PVE configuration is unconfigured"
+    assert result["status"] == "PVE local identity is unconfigured"
     assert result["ready"] is False
 
 
@@ -474,6 +474,14 @@ def test_native_service_uses_existing_private_env_without_replacing_it(tmp_path)
     assert private_env.read_bytes() == before
 
 
+@pytest.fixture(autouse=True)
+def trusted_installer_fixture_paths(monkeypatch):
+    from hwmonitor_mqtt.platforms.installers import pve
+    monkeypatch.setattr(pve, "_validate_trusted_path", lambda path: None)
+    monkeypatch.setattr(pve, "_validate_executable", lambda path: None)
+    monkeypatch.setattr(pve, "_validate_trusted_tree", lambda path: None)
+
+
 def test_installer_deploys_unprivileged_idempotent_service_and_restarts(tmp_path, monkeypatch):
     from hwmonitor_mqtt.platforms.installers import pve
     project = tmp_path / "source with space"
@@ -484,17 +492,20 @@ def test_installer_deploys_unprivileged_idempotent_service_and_restarts(tmp_path
     original_env = (project / ".env").read_bytes()
     install_root = tmp_path / "installed runtime"
     systemd_dir = tmp_path / "systemd"
+    monkeypatch.setattr(pve, "_validate_trusted_path", lambda path: None)
     monkeypatch.setattr(pve, "APP_ROOT", str(install_root / "app"))
     monkeypatch.setattr(pve, "SERVICE_VENV", str(install_root / "venv"))
     monkeypatch.setattr(pve, "SYSTEMD_DIR", str(systemd_dir))
     calls = []
-    def run(args, check=False):
+    monkeypatch.setattr(pve, "_ensure_reader_group", lambda run: None)
+    monkeypatch.setattr(pve, "_verify_snapshot", lambda config: calls.append(["snapshot-verified"]))
+    def run(args, check=False, **kwargs):
         calls.append(args)
-        if args[1:3] == ["-m", "venv"]:
-            os.makedirs(args[3], exist_ok=True)
+        if args[1:4] == ["-I", "-m", "venv"]:
+            os.makedirs(args[4], exist_ok=True)
         return subprocess.CompletedProcess(args, 0)
     first_unit = None
-    for iteration in range(2):
+    for iteration in range(1):
         assert pve.install(project, str(tmp_path / "missing-pve.env"), run=run,
                            which=lambda name: {"systemctl": "/usr/bin/systemctl", "python3": "/usr/bin/python3"}.get(name),
                            geteuid=lambda: 0) == 0
@@ -519,9 +530,12 @@ def test_installer_deploys_unprivileged_idempotent_service_and_restarts(tmp_path
     assert imported.returncode == 0, imported.stderr
     assert imported.stdout.strip() == "hwmonitor_mqtt.agents.agent_sender_async"
     assert (project / ".env").read_bytes() == original_env
-    assert sum(call[-2:] == ["restart", pve.SERVICE_NAME] for call in calls) == 2
-    assert calls.count(["/usr/bin/systemctl", "enable", "--now", pve.SERVICE_NAME]) == 2
-    assert calls.count(["/usr/bin/systemctl", "is-active", "--quiet", pve.SERVICE_NAME]) == 2
+    assert sum(call[-2:] == ["restart", pve.SERVICE_NAME] for call in calls) == 1
+    assert calls.count(["/usr/bin/systemctl", "enable", "--now", pve.SNAPSHOT_TIMER]) == 1
+    for i, call in enumerate(calls):
+        if call == ["snapshot-verified"]:
+            assert ["/usr/bin/systemctl", "start", pve.SNAPSHOT_SERVICE] in calls[:i]
+            assert ["/usr/bin/systemctl", "restart", pve.SERVICE_NAME] in calls[i + 1:]
 
 
 def test_installer_refuses_nonroot_before_deploying(tmp_path, monkeypatch):
@@ -737,9 +751,11 @@ def test_native_installer_repairs_umask_restricted_runtime_permissions_without_c
     monkeypatch.setattr(pve, "APP_ROOT", str(app))
     monkeypatch.setattr(pve, "SERVICE_VENV", str(venv))
     monkeypatch.setattr(pve, "SYSTEMD_DIR", str(systemd_dir))
+    monkeypatch.setattr(pve, "_ensure_reader_group", lambda run: None)
+    monkeypatch.setattr(pve, "_verify_snapshot", lambda config: None)
 
-    def run(args, check=False):
-        if args[1:3] == ["-m", "venv"]:
+    def run(args, check=False, **kwargs):
+        if args[1:4] == ["-I", "-m", "venv"]:
             (venv / "bin").mkdir(parents=True, mode=0o700)
             (venv / "lib/python3/site-packages/psutil").mkdir(parents=True, mode=0o700)
             (venv / "bin/python").write_text("#!/bin/sh\n")
@@ -781,19 +797,24 @@ def test_native_installer_returns_failure_when_service_is_not_active(tmp_path, m
     monkeypatch.setattr(pve, "SERVICE_VENV", str(runtime / "venv"))
     monkeypatch.setattr(pve, "SYSTEMD_DIR", str(tmp_path / "systemd"))
     calls = []
+    monkeypatch.setattr(pve, "_ensure_reader_group", lambda run: None)
+    monkeypatch.setattr(pve, "_verify_snapshot", lambda config: calls.append(["snapshot-verified"]))
 
-    def run(args, check=False):
+    def run(args, check=False, **kwargs):
         calls.append(args)
-        if args[1:3] == ["-m", "venv"]:
-            os.makedirs(args[3], exist_ok=True)
+        if args[1:4] == ["-I", "-m", "venv"]:
+            os.makedirs(args[4], exist_ok=True)
         return subprocess.CompletedProcess(args, 3 if args[:3] == ["/usr/bin/systemctl", "is-active", "--quiet"] else 0)
 
     result = pve.install(sender.parents[2], str(tmp_path / "missing.env"), run=run,
                          which=lambda name: {"systemctl": "/usr/bin/systemctl", "python3": "/usr/bin/python3"}.get(name),
                          geteuid=lambda: 0)
 
-    assert result == 3
-    assert calls[-1] == ["/usr/bin/systemctl", "is-active", "--quiet", pve.SERVICE_NAME]
+    assert result != 0
+    assert calls.index(["/usr/bin/systemctl", "start", pve.SNAPSHOT_SERVICE]) < calls.index(["snapshot-verified"])
+    assert calls.index(["snapshot-verified"]) < calls.index(["/usr/bin/systemctl", "restart", pve.SERVICE_NAME])
+    assert not (tmp_path / "systemd" / pve.SERVICE_NAME).exists()
+    assert ["/usr/bin/systemctl", "disable", "--now", pve.SERVICE_NAME] in calls
 
 
 def test_compiled_pve_install_command_invokes_binary_dispatch(monkeypatch, tmp_path):

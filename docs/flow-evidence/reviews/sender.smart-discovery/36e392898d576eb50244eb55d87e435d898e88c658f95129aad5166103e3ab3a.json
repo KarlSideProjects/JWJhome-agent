@@ -1,0 +1,12 @@
+{
+  "feature": "sender.smart-discovery",
+  "fingerprint": "36e392898d576eb50244eb55d87e435d898e88c658f95129aad5166103e3ab3a",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "影響沿 sender.pve-local 傳遞，測試固定 SMART fixture 並核對結果，SMART collector 沒有變更。",
+    "本次僅覆核 b36e4de 後的 native smoke 變更；未變範圍沿用該提交獨立審查證據 docs/flow-evidence/reviews/sender.smart-discovery/0ef93c05a4deead05e963c97d1976912740289ee068c2d21c0dcbf81878f5d87.json，未宣稱重新審查所有產品原始碼。",
+    "native smoke 20 項測試通過；三項初審缺陷已核對失敗路徑與測試。真實 GitHub systemd、完整候選建置及發布未在本次驗證。"
+  ]
+}

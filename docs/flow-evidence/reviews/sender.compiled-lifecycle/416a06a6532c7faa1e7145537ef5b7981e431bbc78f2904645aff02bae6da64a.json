@@ -1,0 +1,12 @@
+{
+  "feature": "sender.compiled-lifecycle",
+  "fingerprint": "416a06a6532c7faa1e7145537ef5b7981e431bbc78f2904645aff02bae6da64a",
+  "reviewer": "independent Orca install reviewer orca_session_id:62a42047-ed46-41f5-a3f6-fe68e29a2b6c",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "核對 compiled controller 與 native 安裝影響；兩種 compiled dry-run 及 source/Docker 分支實測，platform detection 與 PVE sender 共 93 項測試通過，未驗實際編譯版部署。",
+    "基準 fcb29d5d5efcca9207edd210c60445c243e2aa50；最終 packet fingerprint 與 explain 一致。共同政策由獨立政策審查及最終文件差異核對。",
+    "真實 PVE 與 systemd 啟動、權限、故障回復尚未驗收；程式審查不等同部署驗收。"
+  ]
+}

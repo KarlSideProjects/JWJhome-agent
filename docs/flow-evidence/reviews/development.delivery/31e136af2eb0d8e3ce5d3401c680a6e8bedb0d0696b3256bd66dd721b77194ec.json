@@ -1,0 +1,12 @@
+{
+  "feature": "development.delivery",
+  "fingerprint": "31e136af2eb0d8e3ce5d3401c680a6e8bedb0d0696b3256bd66dd721b77194ec",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "CI 仍保留同一 native job 與其依賴及 20 分鐘 job 時限，改用可信系統 Python 執行安裝的 venv，其他 delivery 控制未變。",
+    "本次僅覆核 b36e4de 後的 native smoke 變更；未變範圍沿用該提交獨立審查證據 docs/flow-evidence/reviews/development.delivery/a7526e70bf498a71d69e14a0a61348c4221e1388534f77b2bb01fadacb3e2dc9.json，未宣稱重新審查所有產品原始碼。",
+    "native smoke 20 項測試通過；三項初審缺陷已核對失敗路徑與測試。真實 GitHub systemd、完整候選建置及發布未在本次驗證。"
+  ]
+}

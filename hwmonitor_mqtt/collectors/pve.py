@@ -105,10 +105,19 @@ class PveCollector:
             return self.snapshot()
         try:
             rows = self.client.resources()
+            sample_time = getattr(self.client, "observed_at", None)
+            if sample_time is not None and self._last_good:
+                previous_time = self._last_good["observed_at"]
+                if sample_time < previous_time:
+                    raise PveError("invalid_snapshot")
+                if sample_time == previous_time:
+                    with self._lock:
+                        self._snapshot = self._last_good
+                        return json.loads(json.dumps(self._snapshot))
             guests = []
             seen = set()
             baselines = dict(self._baselines)
-            observed = self.monotonic()
+            observed = sample_time if sample_time is not None else self.monotonic()
             for row in rows:
                 guest = _guest(row, config)
                 if guest is None:
@@ -138,7 +147,7 @@ class PveCollector:
                 baselines[guest["id"]] = {"node": guest["node"], "uptime": guest["uptime"], "counters": counters, "time": observed}
                 guests.append(guest)
             candidate = {"version": 1, "provider": "pve", "cluster_id": config.cluster_id,
-                         "node": config.node, "observed_at": int(self.wall_clock() if now is None else now),
+                         "node": config.node, "observed_at": sample_time if sample_time is not None else int(self.wall_clock() if now is None else now),
                          "status": "ok", "guests": guests}
             if len(json.dumps(candidate, separators=(",", ":")).encode()) > MAX_PAYLOAD_BYTES:
                 raise PveError("capacity_error")

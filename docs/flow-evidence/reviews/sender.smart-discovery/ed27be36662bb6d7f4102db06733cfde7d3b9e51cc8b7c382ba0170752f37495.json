@@ -1,0 +1,12 @@
+{
+  "feature": "sender.smart-discovery",
+  "fingerprint": "ed27be36662bb6d7f4102db06733cfde7d3b9e51cc8b7c382ba0170752f37495",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "依賴 PVE 快照流程的目錄權限變更；SMART 資料處理未變，既有實機紀錄顯示六顆且無錯誤。",
+    "審查 fb052ea 至 cd6b828 的十二檔差異；未變範圍沿用 docs/flow-evidence/reviews/sender.smart-discovery/36e392898d576eb50244eb55d87e435d898e88c658f95129aad5166103e3ab3a.json 的獨立審查，並未冒稱本人重審全部原始碼。",
+    "四組相關測試 88 passed；PVE 真機紀錄由主端提供，本次未操作實機。GitHub 必要檢查與原生 smoke 尚待執行。"
+  ]
+}

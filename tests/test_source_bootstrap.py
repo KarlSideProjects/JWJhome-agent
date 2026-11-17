@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tarfile
 
 import pytest
@@ -146,11 +147,12 @@ esac
     assert not (tmp_path / 'unexpected').exists()
 
 
+@pytest.mark.parametrize('pinned', [False, True])
 @pytest.mark.parametrize('repo_root', ['hwmonitor-mqtt-', 'JWJhome-agent-'])
 @pytest.mark.parametrize('existing', [False, True])
 @pytest.mark.parametrize('target', ['linux', 'pve'])
 @pytest.mark.parametrize('api_limited', [False, True])
-def test_linux_bootstrap_passes_verified_source_to_installer(tmp_path, existing, target, api_limited, repo_root):
+def test_linux_bootstrap_passes_verified_source_to_installer(tmp_path, existing, target, api_limited, repo_root, pinned):
     commit = 'a' * 40
     root = tmp_path / 'root'
     if existing:
@@ -167,7 +169,7 @@ def test_linux_bootstrap_passes_verified_source_to_installer(tmp_path, existing,
         'from types import SimpleNamespace\n'
         f'def detect_target(): return SimpleNamespace(system="{target}", distribution="debian")\n')
     (source / 'hwmonitor_mqtt' / 'platforms' / 'pve_bootstrap.py').write_text(
-        'from pathlib import Path\nimport os\nPath(os.environ["PVE_PREPARED"]).write_text("yes")\n')
+        'from pathlib import Path\nimport os, sys\nassert "--local" in sys.argv\nPath(os.environ["PVE_PREPARED"]).write_text("yes")\n')
     (source / 'docs' / 'configuration').mkdir(parents=True)
     (source / 'docs' / 'configuration' / 'pve.env.example').write_text('example')
     (source / 'scripts' / 'source_linux_install.py').write_text(
@@ -206,13 +208,25 @@ esac
         tool.write_text(body)
         tool.chmod(0o755)
     calls = tmp_path / 'calls'
+    attacker = tmp_path / 'attacker'
+    attacker.mkdir()
+    marker = tmp_path / 'injected'
+    (attacker / 'sitecustomize.py').write_text(f'from pathlib import Path; Path({str(marker)!r}).write_text("executed")\n')
+    user_site = attacker / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages'
+    user_site.mkdir(parents=True)
+    user_marker = tmp_path / 'user-site-injected'
+    (user_site / 'sitecustomize.py').write_text(f'from pathlib import Path; Path({str(user_marker)!r}).touch()\n')
     result = subprocess.run(
-        ['bash', str(BOOTSTRAP)], text=True, capture_output=True,
+        ['bash', str(BOOTSTRAP)] + (['--commit', commit] if pinned else []), text=True, capture_output=True, cwd=attacker,
         env={**os.environ, 'PATH': f'{bindir}:{os.environ["PATH"]}',
              'HWMONITOR_BOOTSTRAP_ROOT': str(root), 'CALLS': str(calls),
+             'PYTHONPATH': str(attacker), 'PYTHONHOME': str(attacker), 'PYTHONINSPECT': '1',
+             'PYTHONUSERBASE': str(attacker),
              'COMMIT': commit, 'API_LIMITED': str(int(api_limited)), 'HELPER': str(BOOTSTRAP.parent / 'scripts/source_archive.py'),
              'ARCHIVE': str(archive), 'PVE_PREPARED': str(tmp_path / 'pve-prepared')},
     )
+    assert not marker.exists()
+    assert not user_marker.exists()
     assert result.returncode == 0, result.stderr
     assert (root / 'activation.ok').read_text() == commit + ' ' + target
     assert (tmp_path / 'pve-prepared').exists() == (target == 'pve')
@@ -220,11 +234,12 @@ esac
         assert (root / '.env').read_text() == 'private settings'
     assert not (root / '.hwmonitor-mqtt-bootstrap-pending').exists()
     requests = calls.read_text().splitlines()
-    assert len(requests) == (4 if api_limited else 3)
+    assert len(requests) == (2 if pinned else 4 if api_limited else 3)
     assert all(commit in url for url in requests[-2:])
 
 
-def test_linux_bootstrap_activates_source_and_preserves_existing_settings(tmp_path):
+@pytest.mark.parametrize('pinned', [False, True])
+def test_linux_bootstrap_activates_source_and_preserves_existing_settings(tmp_path, pinned):
     commit = 'b' * 40
     root = tmp_path / 'root'
     root.mkdir(mode=0o755)
@@ -298,8 +313,9 @@ sys.exit(1)
         tool = bindir / name
         tool.write_text(body)
         tool.chmod(0o755)
+    command = ['bash', '-s', '--', '--commit', commit] if pinned else ['bash', str(BOOTSTRAP)]
     result = subprocess.run(
-        ['bash', str(BOOTSTRAP)], text=True, capture_output=True, timeout=20,
+        command, input=BOOTSTRAP.read_text() if pinned else None, text=True, capture_output=True, timeout=20,
         env={**os.environ, 'PATH': f'{bindir}:{os.environ["PATH"]}',
              'HWMONITOR_BOOTSTRAP_ROOT': str(root), 'DOCKER_STATE': str(state),
              'COMMIT': commit, 'HELPER': str(BOOTSTRAP.parent / 'scripts/source_archive.py'),
@@ -310,3 +326,28 @@ sys.exit(1)
     assert (root / '.env').read_text() == 'BROKER_HOST=broker\n'
     assert (root / 'hwmonitor_mqtt' / 'platforms' / 'detect.py').is_file()
     assert state.is_file()
+
+
+def test_sitecustomize_fixture_executes_without_isolation(tmp_path):
+    marker = tmp_path / 'executed'
+    (tmp_path / 'sitecustomize.py').write_text(f'from pathlib import Path; Path({str(marker)!r}).touch()\n')
+    result = subprocess.run([sys.executable, '-c', 'pass'], cwd=tmp_path,
+                            env={**os.environ, 'PYTHONPATH': str(tmp_path)}, capture_output=True)
+    assert result.returncode == 0
+    assert marker.exists()
+
+
+def test_pinned_invalid_commit_rejected_before_download(tmp_path):
+    bindir = tmp_path / 'bin'
+    bindir.mkdir()
+    for name, body in {'id': '#!/bin/sh\necho 0\n', 'uname': '#!/bin/sh\necho x86_64\n',
+                       'stat': '#!/bin/sh\nif [ "$2" = "%u" ]; then echo 0; else exec /usr/bin/stat "$@"; fi\n',
+                       'curl': f'#!/bin/sh\ntouch "{tmp_path / "contacted"}"\nexit 1\n'}.items():
+        path = bindir / name
+        path.write_text(body)
+        path.chmod(0o755)
+    result = subprocess.run(['bash', str(BOOTSTRAP), '--commit', 'not-a-commit'], capture_output=True, text=True,
+        env={**os.environ, 'PATH': f'{bindir}:{os.environ["PATH"]}', 'HWMONITOR_BOOTSTRAP_ROOT': str(tmp_path / 'root')})
+    assert result.returncode != 0
+    assert 'Invalid source commit' in result.stderr
+    assert not (tmp_path / 'contacted').exists()

@@ -1,0 +1,12 @@
+{
+  "feature": "sender.release-orchestration",
+  "fingerprint": "89e53d60aa186aa14c2f2b2c096dcb8bbc9b87c4b7b6d77c0aa074e0686e50ae",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "共享契約與相依建置指紋改變，發布控制與產物檢查未改。",
+    "審查 fb052ea 至 cd6b828 的十二檔差異；未變範圍沿用 docs/flow-evidence/reviews/sender.release-orchestration/0a689bea756b3a106309f8d8a767be0ed3d45221038429937f1c90ec8c44860b.json 的獨立審查，並未冒稱本人重審全部原始碼。",
+    "四組相關測試 88 passed；PVE 真機紀錄由主端提供，本次未操作實機。GitHub 必要檢查與原生 smoke 尚待執行。"
+  ]
+}

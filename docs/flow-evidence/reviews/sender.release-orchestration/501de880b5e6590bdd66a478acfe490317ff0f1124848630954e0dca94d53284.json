@@ -1,0 +1,12 @@
+{
+  "feature": "sender.release-orchestration",
+  "fingerprint": "501de880b5e6590bdd66a478acfe490317ff0f1124848630954e0dca94d53284",
+  "reviewer": "independent Orca reviewer orca_session_id:ef2a2f71-e5b2-410a-b641-fc829ce97950",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "Independent reviewer checked final packet against trusted base fcb29d5d5efcca9207edd210c60445c243e2aa50 and reviewed the shared contracts and policy changes; scope and results are recorded in .audit/pve-flow-policy-review.md. Global policy checks remained in place; policy scope tests passed 23/23.",
+    "Direct flow and input blobs match base. Dependent sender.build changes are covered separately by the installation reviewer; this record makes no release or build execution claim.",
+    "This source/flow review does not claim real PVE hardware, systemd, release publication, or build acceptance."
+  ]
+}

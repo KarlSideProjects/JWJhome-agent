@@ -1,0 +1,12 @@
+{
+  "feature": "sender.pve-local",
+  "fingerprint": "bf5d094f0659b6d9441d649d2068812a04ab655c435eb43be5dfe6cdcd00d297",
+  "reviewer": "independent Orca reviewer orca_session_id:aa3ef04b-b86e-43d4-9bc7-b251505df263",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "systemd Group 建立 reader 目錄，ExecStart ! 保留 root 憑證；writer 檢查 UID、GID 和目錄，fixture 檢查 root UID/GID，階段診斷保留 rollback。",
+    "審查 fb052ea 至 cd6b828 的十二檔差異；未變範圍沿用 docs/flow-evidence/reviews/sender.pve-local/99b2bfa9ec7d0afd8b1cfa5a03a6c124346f000a206ee1367d4c89006db42f6b.json 的獨立審查，並未冒稱本人重審全部原始碼。",
+    "四組相關測試 88 passed；PVE 真機紀錄由主端提供，本次未操作實機。GitHub 必要檢查與原生 smoke 尚待執行。"
+  ]
+}
