@@ -203,7 +203,7 @@
     {
       "path": "README.md",
       "kind": "file",
-      "md5": "0f30931d0399e8ece972a8d2e0e0694f"
+      "md5": "7cb94075d76e57a154d56d48effe6281"
     },
     {
       "path": "LICENSE",
@@ -828,7 +828,7 @@
     {
       "path": "bootstrap-source.ps1",
       "kind": "file",
-      "md5": "c13e212d7d10ddc334223226e70e862a"
+      "md5": "4d4a39071848051036d0a4576cd62fef"
     },
     {
       "path": "Dockerfile.source",
@@ -943,7 +943,7 @@
     {
       "path": "tests/test_windows_source_bootstrap.py",
       "kind": "file",
-      "md5": "2479ecca847d8aaa6d9b174cd3515801"
+      "md5": "4de84dd0c39af687d340bf38102d571a"
     },
     {
       "path": "tests/test_windows_source_trust.py",
@@ -3684,6 +3684,48 @@
       "reviewer": "independent Terra /root/docker_bug_review",
       "verdict": "pass",
       "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/1beca78be326253c0617bdaa5ba14b9822e07878e99581273dcfaceca8cadafd.json"
+    },
+    {
+      "feature": "sender.compiled-lifecycle",
+      "fingerprint": "79dab50e376e74dbfec686b181cf8b973e5aa34d8a7b76e37b128af6151c02f2",
+      "reviewer": "independent Orca reviewer orca_session_id:147dc00f-6cfd-4696-8f92-8a02de6c9a81",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.compiled-lifecycle/79dab50e376e74dbfec686b181cf8b973e5aa34d8a7b76e37b128af6151c02f2.json"
+    },
+    {
+      "feature": "sender.distribution",
+      "fingerprint": "e9cd2d2d49b803e7ac363d0f3b33c672eaaa7a91fdcacedd42850b2251ff4e08",
+      "reviewer": "independent Orca reviewer orca_session_id:147dc00f-6cfd-4696-8f92-8a02de6c9a81",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.distribution/e9cd2d2d49b803e7ac363d0f3b33c672eaaa7a91fdcacedd42850b2251ff4e08.json"
+    },
+    {
+      "feature": "sender.license",
+      "fingerprint": "ae4630bf937f9c028af15d78fe1899ba8e401bc39b4e9ecc017a752e60f15332",
+      "reviewer": "independent Orca reviewer orca_session_id:147dc00f-6cfd-4696-8f92-8a02de6c9a81",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.license/ae4630bf937f9c028af15d78fe1899ba8e401bc39b4e9ecc017a752e60f15332.json"
+    },
+    {
+      "feature": "sender.pve-local",
+      "fingerprint": "6ad6d94c233f2861b731d1deba839b28440213c560993df23d5a2bf3f3104c58",
+      "reviewer": "independent Orca reviewer orca_session_id:147dc00f-6cfd-4696-8f92-8a02de6c9a81",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.pve-local/6ad6d94c233f2861b731d1deba839b28440213c560993df23d5a2bf3f3104c58.json"
+    },
+    {
+      "feature": "sender.smart-discovery",
+      "fingerprint": "89a4b179ffaf105de1979e8c02505457f20f2946131258ea91712c9bf458066e",
+      "reviewer": "independent Orca reviewer orca_session_id:147dc00f-6cfd-4696-8f92-8a02de6c9a81",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.smart-discovery/89a4b179ffaf105de1979e8c02505457f20f2946131258ea91712c9bf458066e.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "27777f5957352fc1ebe6e6476df209cbc0a4c6a724ab6cf1e71ba0420ea97bf2",
+      "reviewer": "independent Orca reviewer orca_session_id:147dc00f-6cfd-4696-8f92-8a02de6c9a81",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/27777f5957352fc1ebe6e6476df209cbc0a4c6a724ab6cf1e71ba0420ea97bf2.json"
     }
   ],
   "policy_inputs": [

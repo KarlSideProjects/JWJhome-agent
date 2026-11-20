@@ -77,7 +77,7 @@ ARM64 與 PVE 來源安裝仍需各自實機驗證。Windows 請使用 [Windows 
 
 ## Windows Sender 安裝與注意事項
 
-在 64 位元「系統管理員」PowerShell 執行以下命令。首次執行會隱藏 MQTT 密碼輸入，並建立僅 Administrators 與 SYSTEM 可讀的 `.env`；已辨識的既有設定會保留。安裝器下載固定 commit 的 Python 來源，準備 Python、uv、LibreHardwareMonitor 與 PawnIO，註冊開機排程並啟動 sender。未知目錄會停止安裝。
+Windows 11 按 `Win + X` 選「終端機 (系統管理員)」（Windows 10 選「Windows PowerShell (系統管理員)」），或在開始功能表搜尋 **Windows PowerShell**（避免選 `Windows PowerShell (x86)`）並「以系統管理員身分執行」，貼上以下命令完成安裝。若在 64 位元 Windows x64 誤開 32 位元 `Windows PowerShell (x86)`，安裝器會在檢查父目錄權限後自動切換到原生 64 位元 PowerShell 繼續執行。首次執行會隱藏 MQTT 密碼輸入，並建立僅 Administrators 與 SYSTEM 可讀的 `.env`；已辨識的既有設定會保留。安裝器下載固定 commit 的 Python 來源，準備 Python、uv、LibreHardwareMonitor 與 PawnIO，註冊開機排程並啟動 sender。未知目錄會停止安裝。
 
 ```powershell
 & ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/KarlSideProjects/JWJhome-agent/master/bootstrap-source.ps1' -ErrorAction Stop).Content))
