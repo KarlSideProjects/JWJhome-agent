@@ -188,3 +188,39 @@ def test_handoff_switches_from_32bit_windows_powershell_to_64bit(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert marker.read_text(encoding='utf-8').strip() == f'8:{COMMIT}'
+
+
+@pytest.mark.parametrize(('proc_arch', 'wow64_arch', 'expected_ok'), [
+    ('AMD64', '', True),
+    ('x86', 'AMD64', True),
+    ('ARM64', '', False),
+    ('x86', 'ARM64', False),
+    ('x86', '', False),
+])
+def test_os_x64_check_uses_env_and_is64bit_without_runtimeinformation(proc_arch, wow64_arch, expected_ok):
+    line = next(
+        l for l in BOOTSTRAP.read_text(encoding='utf-8').splitlines()
+        if '$osArch =' in l
+    )
+    check_line = next(
+        l for l in BOOTSTRAP.read_text(encoding='utf-8').splitlines()
+        if 'Only Windows x64 is supported.' in l
+    )
+    shell = f'''
+$env:PROCESSOR_ARCHITECTURE = '{proc_arch}'
+if ('{wow64_arch}') {{ $env:PROCESSOR_ARCHITEW6432 = '{wow64_arch}' }} else {{ Remove-Item Env:PROCESSOR_ARCHITEW6432 -ErrorAction SilentlyContinue }}
+{line}
+try {{
+    {check_line}
+    if (-not [Environment]::Is64BitOperatingSystem) {{ throw 'unexpected pass on 32-bit OS' }}
+    exit 0
+}} catch {{
+    if ($_.Exception.Message -eq 'Only Windows x64 is supported.') {{ exit 2 }}
+    throw
+}}
+'''
+    result = run_pwsh(shell)
+    if expected_ok:
+        assert result.returncode == 0, result.stderr
+    else:
+        assert result.returncode == 2, result.stderr
