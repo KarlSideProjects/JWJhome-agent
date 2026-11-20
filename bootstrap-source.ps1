@@ -82,7 +82,8 @@ function Invoke-Native64BitBootstrap {
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = [Security.Principal.WindowsPrincipal]::new($identity)
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run this bootstrap from an elevated PowerShell window.' }
-if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne [Runtime.InteropServices.Architecture]::X64) { throw 'Only Windows x64 is supported.' }
+$osArch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
+if (-not [Environment]::Is64BitOperatingSystem -or $osArch -ine 'AMD64') { throw 'Only Windows x64 is supported.' }
 $trustedSids = @('S-1-5-18', 'S-1-5-32-544', 'S-1-3-0', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464', $identity.User.Value)
 function Assert-TrustedItem([string]$Path, [bool]$Ancestor, [bool]$Secret = $false) {
     $item = Get-Item -LiteralPath $Path -Force

@@ -1,0 +1,12 @@
+{
+  "feature": "sender.source-lifecycle",
+  "fingerprint": "e6c0b4afd1b0b35cbb29933be8fb3082d5f6e53e9c730e827c7a055e2981b937",
+  "reviewer": "independent Orca reviewer orca_session_id:5586d958-f9c4-4e36-a14c-b71d26ff0c3b",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "Verified bootstrap-source.ps1 L85-86 replaces [Runtime.InteropServices.RuntimeInformation]::OSArchitecture (which returned null in PS 5.1) with [Environment]::Is64BitOperatingSystem and PROCESSOR_ARCHITEW6432/PROCESSOR_ARCHITECTURE == AMD64.",
+    "Verified Windows x64 (64-bit PS 5.1 and 32-bit WOW64 PS 5.1), Windows ARM64, 32-bit x86, and empty/unset env edge cases (9 boundary probes + pytest 40 passed in 47.38s across test_windows_source_bootstrap.py, test_windows_source_trust.py, test_powershell_syntax.py).",
+    "Limits: PowerShell 7 pwsh and full Linux/Windows CI checks pending GitHub Actions."
+  ]
+}

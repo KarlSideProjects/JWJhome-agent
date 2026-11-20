@@ -828,7 +828,7 @@
     {
       "path": "bootstrap-source.ps1",
       "kind": "file",
-      "md5": "4d4a39071848051036d0a4576cd62fef"
+      "md5": "e995d663d39c5bfcd8ebd839034bb754"
     },
     {
       "path": "Dockerfile.source",
@@ -943,7 +943,7 @@
     {
       "path": "tests/test_windows_source_bootstrap.py",
       "kind": "file",
-      "md5": "4de84dd0c39af687d340bf38102d571a"
+      "md5": "c1716e42f88d98a3d28dd89d7d595bb1"
     },
     {
       "path": "tests/test_windows_source_trust.py",
@@ -3726,6 +3726,13 @@
       "reviewer": "independent Orca reviewer orca_session_id:147dc00f-6cfd-4696-8f92-8a02de6c9a81",
       "verdict": "pass",
       "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/27777f5957352fc1ebe6e6476df209cbc0a4c6a724ab6cf1e71ba0420ea97bf2.json"
+    },
+    {
+      "feature": "sender.source-lifecycle",
+      "fingerprint": "e6c0b4afd1b0b35cbb29933be8fb3082d5f6e53e9c730e827c7a055e2981b937",
+      "reviewer": "independent Orca reviewer orca_session_id:5586d958-f9c4-4e36-a14c-b71d26ff0c3b",
+      "verdict": "pass",
+      "evidence": "docs/flow-evidence/reviews/sender.source-lifecycle/e6c0b4afd1b0b35cbb29933be8fb3082d5f6e53e9c730e827c7a055e2981b937.json"
     }
   ],
   "policy_inputs": [
