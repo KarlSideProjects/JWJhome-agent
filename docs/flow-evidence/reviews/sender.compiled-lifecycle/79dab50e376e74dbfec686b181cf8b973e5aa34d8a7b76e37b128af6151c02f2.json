@@ -1,0 +1,13 @@
+{
+  "feature": "sender.compiled-lifecycle",
+  "fingerprint": "79dab50e376e74dbfec686b181cf8b973e5aa34d8a7b76e37b128af6151c02f2",
+  "reviewer": "independent Orca reviewer orca_session_id:147dc00f-6cfd-4696-8f92-8a02de6c9a81",
+  "verdict": "pass",
+  "findings": [],
+  "evidence": [
+    "Verified bootstrap-source.ps1 32-bit x86 PowerShell to native 64-bit PowerShell handoff (Sysnative + GetFolderPath Windows + Set-Acl -LiteralPath + elevation/X64/ancestor checks before relaunchDir), scriptblock validator invocation, and -File -ExecutionPolicy Bypass activator invocation preserving script:stopIssued.",
+    "Verified README.md and docs/deployment/installation.md Windows 10/11 launch instructions and cross-platform one-liner without Set-ExecutionPolicy.",
+    "Local verification on Windows 11 x64 PS 5.1: 42 passed (test_windows_source_bootstrap.py, test_windows_source_trust.py, test_windows_source_activation.py, test_powershell_syntax.py); 7 passed under default Restricted ExecutionPolicy (download_pins_commit + handoff including real SysWOW64->Sysnative); test_remote_bootstrap.py -k windows 2 passed.",
+    "Limits: Linux pwsh make check, Windows pwsh 7 CI job, and live elevated end-to-end Windows install are pending GitHub Actions CI and operator verification."
+  ]
+}

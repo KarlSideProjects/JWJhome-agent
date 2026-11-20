@@ -24,7 +24,7 @@ Windows 的 full 模式會透過 Docker CLI 監控目前 Docker context 的容�
 
 首次安裝會詢問 MQTT 設定，既有設定會保留。PVE 使用原生 systemd 服務；Windows 使用開機排程。完整限制見 [安裝與維護](docs/deployment/installation.md)。
 
-Windows 在系統管理員 PowerShell 貼上一行：
+Windows 開啟「系統管理員」PowerShell（Windows 11 按 `Win + X` 選「終端機 (系統管理員)」，Windows 10 選「Windows PowerShell (系統管理員)」，或在開始功能表選 **Windows PowerShell**「以系統管理員身分執行」，避免選 `Windows PowerShell (x86)`；若誤開 32 位元視窗，安裝器也會自動切換到 64 位元 PowerShell），貼上這一行完成安裝：
 
 ```powershell
 & ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/KarlSideProjects/JWJhome-agent/master/bootstrap-source.ps1' -ErrorAction Stop).Content))

@@ -44,14 +44,45 @@ function Get-VerifiedSource([string]$WorkDirectory, [string]$PinnedCommit = '') 
     $destination = Join-Path $WorkDirectory 'unpacked'
     Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/KarlSideProjects/hwmonitor-mqtt/$commit/scripts/windows/validate_source_archive.ps1" -OutFile $validator
     Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/KarlSideProjects/hwmonitor-mqtt/archive/$commit.zip" -OutFile $archive
-    $staged = & $validator -Archive $archive -Destination $destination -Source $commit
+    $staged = & ([scriptblock]::Create([IO.File]::ReadAllText($validator))) -Archive $archive -Destination $destination -Source $commit
     return [pscustomobject]@{ Commit = $commit; Path = $staged }
 }
 # End source download
+# Begin 64-bit handoff
+function Invoke-Native64BitBootstrap {
+    param(
+        [Parameter(Mandatory = $true)][string]$ScriptText,
+        [Parameter(Mandatory = $true)][string]$WorkDirectory,
+        [string]$PinnedCommit = '',
+        [string]$NativePowerShell = (Join-Path ([Environment]::GetFolderPath('Windows')) 'Sysnative\WindowsPowerShell\v1.0\powershell.exe')
+    )
+    if (-not (Test-Path -LiteralPath $NativePowerShell -PathType Leaf)) {
+        throw 'Only Windows x64 with 64-bit PowerShell is supported.'
+    }
+    $relaunchScript = Join-Path $WorkDirectory 'bootstrap-source.ps1'
+    [IO.File]::WriteAllText($relaunchScript, $ScriptText, [Text.UTF8Encoding]::new($true))
+    $argsList = [Collections.Generic.List[string]]@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $relaunchScript)
+    if ($PinnedCommit) {
+        $argsList.Add('-Commit')
+        $argsList.Add($PinnedCommit)
+    }
+    $previousErrorPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & $NativePowerShell @argsList
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorPreference
+    }
+    if ($exitCode -ne 0) {
+        throw "64-bit PowerShell bootstrap failed with exit code $exitCode."
+    }
+}
+# End 64-bit handoff
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = [Security.Principal.WindowsPrincipal]::new($identity)
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run this bootstrap from an elevated PowerShell window.' }
-if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne [Runtime.InteropServices.Architecture]::X64 -or [IntPtr]::Size -ne 8) { throw 'Only Windows x64 with 64-bit PowerShell is supported.' }
+if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne [Runtime.InteropServices.Architecture]::X64) { throw 'Only Windows x64 is supported.' }
 $trustedSids = @('S-1-5-18', 'S-1-5-32-544', 'S-1-3-0', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464', $identity.User.Value)
 function Assert-TrustedItem([string]$Path, [bool]$Ancestor, [bool]$Secret = $false) {
     $item = Get-Item -LiteralPath $Path -Force
@@ -85,6 +116,24 @@ while ($ancestor) {
     $next = Split-Path -Parent $ancestor
     if ($next -eq $ancestor) { break }
     $ancestor = $next
+}
+if ([IntPtr]::Size -ne 8) {
+    $relaunchDir = Join-Path $env:ProgramData ('hwmonitor-mqtt-relaunch-' + [guid]::NewGuid().ToString('N'))
+    try {
+        New-Item -ItemType Directory -Path $relaunchDir | Out-Null
+        $relaunchAcl = [Security.AccessControl.DirectorySecurity]::new()
+        $relaunchAcl.SetAccessRuleProtection($true, $false)
+        foreach ($sid in @('S-1-5-32-544', 'S-1-5-18')) {
+            $rule = [Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($sid), 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
+            $relaunchAcl.AddAccessRule($rule)
+        }
+        Set-Acl -LiteralPath $relaunchDir -AclObject $relaunchAcl
+        $scriptText = if ($PSCommandPath) { [IO.File]::ReadAllText($PSCommandPath) } else { $MyInvocation.MyCommand.ScriptBlock.ToString() }
+        Invoke-Native64BitBootstrap -ScriptText $scriptText -WorkDirectory $relaunchDir -PinnedCommit $Commit
+    } finally {
+        Remove-Item -LiteralPath $relaunchDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    return
 }
 $lockHandle = $null
 if (Test-Path $root) {
@@ -186,7 +235,17 @@ try {
         Remove-Variable password, securePassword
     }
 
-    & $activator -ProjectRoot $root -StagedSource $staged -Source $verified.Commit
+    $previousErrorPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & (Get-Process -Id $PID).Path -NoProfile -ExecutionPolicy Bypass -File $activator -ProjectRoot $root -StagedSource $staged -Source $verified.Commit
+        $activatorExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorPreference
+    }
+    if ($activatorExit -ne 0) {
+        throw "Source activation failed with exit code $activatorExit."
+    }
     Remove-Item -LiteralPath (Join-Path $root '.hwmonitor-mqtt-bootstrap-pending') -Force -ErrorAction SilentlyContinue
     Write-Output "Sender source $($verified.Commit) installed and started from $root."
 }
